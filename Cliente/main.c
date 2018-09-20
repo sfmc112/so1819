@@ -19,7 +19,7 @@
  */
 int main(int argc, char** argv) {
     
-    printf("O Ricardo e um fixe!\n");
+    printf("O Ricardo e um fixe e gostoso!\n");
 
     return (EXIT_SUCCESS);
 }
