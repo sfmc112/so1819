@@ -20,6 +20,9 @@
 int main(int argc, char** argv) {
     
     printf("O Ricardo e um fixe e gostoso!\n");
+    
+    printf("yo");
+    printf("Va agora temos de usar isto para fazer bem!!");
 
     return (EXIT_SUCCESS);
 }
