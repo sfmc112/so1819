@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
     printf("yo");
     printf("Va agora temos de usar isto para fazer bem!!");
 
+    printf("yo");
     return (EXIT_SUCCESS);
 }
 
