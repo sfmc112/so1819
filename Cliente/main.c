@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
     
     printf("O Ricardo e um fixe e gostoso!\n");
 
+    printf("yo");
     return (EXIT_SUCCESS);
 }
 
