@@ -19,11 +19,9 @@
  */
 int main(int argc, char** argv) {
     
-    printf("O Ricardo e um fixe e gostoso!\n");
+    printf("Hello world!!\n");
     
-    printf("Va agora temos de usar isto para fazer bem!!");
-
-    printf("yo");
+    printf("Can this be 4 real??\n");
     
     return (EXIT_SUCCESS);
 }
