@@ -25,6 +25,9 @@ int main(int argc, char** argv) {
     printf("kappa!");
     getchar();
     
+    
+    
+    printf("touuuuuu");
     return (EXIT_SUCCESS);
 }
 
