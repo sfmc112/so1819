@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     printf("kappa!");
     getchar();
     getchar();//número 2
-
+    printf("Ola!");
     
     
     
