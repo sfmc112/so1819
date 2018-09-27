@@ -30,6 +30,9 @@ int main(int argc, char** argv) {
     getchar();//número 2
 
     
+    
+    
+    printf("touuuuuu");
     return (EXIT_SUCCESS);
 }
 
