@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     getchar();//número 2
 
     
-    printf("ASDF");
+    printf("ASDF"); //kappa
     
     printf("touuuuuu");
     return (EXIT_SUCCESS);
