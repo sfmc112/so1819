@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
     
     printf("Can this be 4 real??\n");
     printf("blablabla!");
+    printf("Fixe");
     getchar();
     
     return (EXIT_SUCCESS);
