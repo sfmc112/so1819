@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     printf("kappa!");
     getchar();
     
-    
+    printf("ASDF");
     
     printf("touuuuuu");
     return (EXIT_SUCCESS);
