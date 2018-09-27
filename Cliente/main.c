@@ -19,20 +19,6 @@
  */
 int main(int argc, char** argv) {
     
-    printf("Hello world!!\n");
-    printf("Can this be 4 real??\n");
-    printf("blablabla!");
-
-    printf("Fixe");
-
-    printf("kappa!");
-    getchar();
-    getchar();//número 2
-    printf("Ola!");
-    
-    printf("ASDF"); //kappa
-    
-    printf("touuuuuu");
     return (EXIT_SUCCESS);
 }
 
