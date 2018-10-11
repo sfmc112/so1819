@@ -17,58 +17,67 @@
 #include <string.h>
 #include "utils.h"
 
-int cmdShutdown(){
+int cmdShutdown() {
     puts("Comando shutdown nao implementado!");
     return 0;
 }
 
-int cmdSettings(){
+int cmdSettings() {
     puts("Comando settings nao implementado!");
     return 0;
 }
 
-int cmdLoad(){
+int cmdLoad() {
     puts("Comando load nao implementado!");
     return 0;
 }
 
-int cmdSave(){
+int cmdSave() {
     puts("Comando save nao implementado!");
     return 0;
 }
 
-int cmdFree(){
+int cmdFree() {
     puts("Comando free nao implementado!");
     return 0;
 }
 
-int cmdStats(){
+int cmdStats() {
     puts("Comando statistics nao implementado!");
     return 0;
 }
 
-int cmdUsers(){
+int cmdUsers() {
     puts("Comando users nao implementado!");
     return 0;
 }
 
-int cmdText(){
+int cmdText() {
     puts("Comando text nao implementado!");
     return 0;
 }
+
+int verificaParam(char* token) {
+    token = strtok(NULL, " ");
+    if (token != NULL)
+        return 1;
+    puts("Falta o segundo parametro");
+    return 0;
+}
+
 /**
  * Função responsável por ler o comando e interpreta-o.
  * @return 1 se conseguiu e 0 caso contrário
  */
 int lerComandos() {
-    char comando[20]; //TODO alterar para define
+    char comando[40]; //TODO alterar para define
     const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
     char* token = NULL;
     setbuf(stdout, NULL);
     int i;
     while (1) {
         printf("Introduza o comando: ");
-        scanf(" %19[^\n]", comando); //TODO temos que resolver o problema de inserir caracteres a mais! Nao esta a funcionar
+        scanf(" %39[^\n]", comando); //TODO temos que resolver o problema de inserir caracteres a mais! Nao esta a funcionar
         //comando tudo em letras minusculas
         toLower(comando);
         //1ª parte do comando
@@ -84,15 +93,17 @@ int lerComandos() {
             case 1:
                 cmdSettings();
                 break;
-
             case 2:
-                cmdLoad();
+                if(verificaParam(token))
+                    cmdLoad();
                 break;
             case 3:
-                cmdSave();
+                if(verificaParam(token))
+                    cmdSave();
                 break;
             case 4:
-                cmdFree();
+                if(verificaParam(token))
+                    cmdFree();
                 break;
             case 5:
                 cmdStats();
@@ -105,7 +116,7 @@ int lerComandos() {
                 break;
             default:
                 puts("Comando invalido!");
-                
+
         }
     }
 }
