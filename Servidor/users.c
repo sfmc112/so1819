@@ -16,7 +16,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "utils.h"
-#define USERSDEFAULT_DB "medit.db"
 
 /**
  * Função para validar username.

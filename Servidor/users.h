@@ -13,6 +13,7 @@
 
 #ifndef USERS_H
 #define USERS_H
+#define USERSDEFAULT_DB "medit.db"
 int checkUsername(char* user);
 int addUsername();
 #endif /* USERS_H */

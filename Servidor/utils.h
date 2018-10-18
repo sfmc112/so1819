@@ -15,4 +15,5 @@
 #define UTILS_H
 void exitError(char* mensagem);
 void toLower(char* buffer);
+int ifFileExists(char* nomeFicheiro);
 #endif /* UTILS_H */
