@@ -16,24 +16,27 @@
 #include <stdlib.h>
 #include <string.h>
 #include "utils.h"
-#define usersDB "users.db"
+#define USERSDEFAULT_DB "medit.db"
+
 /**
  * Função para validar username.
  * @param user nome de utilizador
  * @return 1 se valido e 0 caso contrário
  */
-int validaUsername(char* user) {
-    FILE* f;
-    char buffer[10];
-    f = fopen(usersDB, "r");
-    if (f == NULL)
-        sairComErro("Nao consegui abrir o ficheiro!");
-    while (fscanf(f, " %[^\n]", buffer) == 1)
-        if (strncmp(buffer, user, sizeof (buffer) - 1) == 0) {
-            fclose(f);
-            return 1;
-        }
-    fclose(f);
+int checkUsername(char* user) {
+    if (strlen(user) <= 8) {
+        FILE* f;
+        char buffer[10];
+        f = fopen(USERSDEFAULT_DB, "r");
+        if (f == NULL)
+            exitError("Nao consegui abrir o ficheiro!");
+        while (fscanf(f, " %[^\n]", buffer) == 1)
+            if (strcmp(buffer, user) == 0) {
+                fclose(f);
+                return 1;
+            }
+        fclose(f);
+    }   
     return 0;
 }
 
@@ -45,14 +48,14 @@ int addUsername() {
     char user[10];
     printf("Indique o seu username: ");
     scanf(" %9[^\n]", user);
-    if (validaUsername(user)) {
+    if (checkUsername(user)) {
         puts("Esse username ja esta registado na nossa base de dados.");
         return 0;
     } else {
         FILE* f;
-        f = fopen(usersDB, "a");
+        f = fopen(USERSDEFAULT_DB, "a");
         if (f == NULL)
-            sairComErro("Nao consegui abrir o ficheiro!");
+            exitError("Nao consegui abrir o ficheiro!");
         fprintf(f, "%s\n", user);
         fclose(f);
         return 1;

@@ -19,7 +19,7 @@
  * Função que termina a aplicação com erro.
  * @param mensagem mensagem de erro
  */
-void sairComErro(char* mensagem) {
+void exitError(char* mensagem) {
     perror(mensagem);
     exit(1);
 }

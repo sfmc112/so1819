@@ -13,5 +13,5 @@
 
 #ifndef COMMANDS_H
 #define COMMANDS_H
-int lerComandos();
+int readCommands();
 #endif /* COMMANDS_H */

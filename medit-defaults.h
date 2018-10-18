@@ -5,5 +5,17 @@
 #define VAR_MAXCOLUMNS 45
 
 //Definição das estruturas de dados
+typedef struct _line Line;
+typedef struct _editordata EditorData;
 
+struct _editordata{
+    int lin; // Número de linhas que o editor possui
+    Line lines[lin]; // As linhas com o texto
+};
+
+struct _line{
+    int free; // 1 se está livre, 0 se está ocupado por um utilizador
+    int col; // Comprimento de uma linha de texto
+    char text[col]; // Representa uma linha de texto
+};
 #endif

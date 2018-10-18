@@ -3,7 +3,8 @@
 #include "commands.h"
 
 int main(int argc, char** argv) {
-    lerComandos();
+    //checkArgs();
+    readCommands();
     return (EXIT_SUCCESS);
 }
 

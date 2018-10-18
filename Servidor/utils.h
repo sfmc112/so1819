@@ -13,6 +13,6 @@
 
 #ifndef UTILS_H
 #define UTILS_H
-void sairComErro(char* mensagem);
+void exitError(char* mensagem);
 void toLower(char* buffer);
 #endif /* UTILS_H */

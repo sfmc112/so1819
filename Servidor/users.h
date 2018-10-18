@@ -13,6 +13,6 @@
 
 #ifndef USERS_H
 #define USERS_H
-int validaUsername(char* user);
+int checkUsername(char* user);
 int addUsername();
 #endif /* USERS_H */

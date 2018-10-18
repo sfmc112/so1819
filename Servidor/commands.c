@@ -56,8 +56,8 @@ int cmdText() {
     puts("Comando text nao implementado!");
     return 0;
 }
-
-int verificaParam(char* token) {
+//TODO cdocs
+int checkCommandArgs(char* token) {
     token = strtok(NULL, " ");
     if (token != NULL)
         return 1;
@@ -69,7 +69,7 @@ int verificaParam(char* token) {
  * Função responsável por ler o comando e interpreta-o.
  * @return 1 se conseguiu e 0 caso contrário
  */
-int lerComandos() {
+int readCommands() {
     char comando[40]; //TODO alterar para define
     const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
     char* token = NULL;
@@ -94,15 +94,15 @@ int lerComandos() {
                 cmdSettings();
                 break;
             case 2:
-                if(verificaParam(token))
+                if(checkCommandArgs(token))
                     cmdLoad();
                 break;
             case 3:
-                if(verificaParam(token))
+                if(checkCommandArgs(token))
                     cmdSave();
                 break;
             case 4:
-                if(verificaParam(token))
+                if(checkCommandArgs(token))
                     cmdFree();
                 break;
             case 5:
