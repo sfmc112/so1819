@@ -24,7 +24,7 @@ void exitError(char* mensagem) {
     exit(1);
 }
 /**
- * Função para colocar toda a string em letras minusculas
+ * Função para colocar toda a string em letras minusculas.
  * @param buffer string a ser transformada
  * @return 
  */

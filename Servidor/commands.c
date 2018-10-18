@@ -56,7 +56,11 @@ int cmdText() {
     puts("Comando text nao implementado!");
     return 0;
 }
-//TODO cdocs
+/**
+ * Função para verificar se um determinado comando possui um argumento.
+ * @param token comando
+ * @return 1 se existe argumento, 0 se não.
+ */
 int checkCommandArgs(char* token) {
     token = strtok(NULL, " ");
     if (token != NULL)
