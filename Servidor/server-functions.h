@@ -14,5 +14,5 @@
 #ifndef SERVER_FUNCTIONS_H
 #define SERVER_FUNCTIONS_H
 #include "server-defaults.h"
-void checkArgs(int argc, char** argv, ServerData sd);
+void checkArgs(int argc, char** argv, ServerData* sd);
 #endif /* SERVER_FUNCTIONS_H */

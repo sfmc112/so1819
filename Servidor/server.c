@@ -9,7 +9,7 @@ ServerData sData;
 void initializeStructs();
 
 int main(int argc, char** argv) {
-    checkArgs(argc, argv, sData);
+    checkArgs(argc, argv, &sData);
     
     //getEnvironmentVariables();
     
