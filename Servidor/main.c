@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "commands.h"
-#include "server-defaults.h"
+#include "server-functions.h"
 
 EditorData eData;
 ServerData sData;
@@ -9,9 +9,9 @@ ServerData sData;
 void initializeStructs();
 
 int main(int argc, char** argv) {
-    checkArgs(argc, argv);
+    checkArgs(argc, argv, sData);
     
-    getEnvironmentVariables();
+    //getEnvironmentVariables();
     
     initializeStructs();
     

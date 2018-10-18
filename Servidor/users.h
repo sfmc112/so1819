@@ -13,6 +13,8 @@
 
 #ifndef USERS_H
 #define USERS_H
+
 int checkUsername(char* user);
 int addUsername();
+
 #endif /* USERS_H */

@@ -17,7 +17,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <getopt.h>
 
 /**
  * Função para verificar argumentos.
@@ -31,7 +30,7 @@ void checkArgs(int argc, char** argv, ServerData sd) {
             switch (res) {
                 case 'f':
                     cmd = optarg;
-                    strcpy_s(sd.usersDB,MAXSIZE,cmd);
+                    strncpy(sd.usersDB, cmd, MAXSIZE);
                     break;
             }
         }
