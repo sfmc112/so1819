@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+
 /**
  * Função que termina a aplicação com erro.
  * @param mensagem mensagem de erro
@@ -23,6 +24,7 @@ void exitError(char* mensagem) {
     perror(mensagem);
     exit(1);
 }
+
 /**
  * Função para colocar toda a string em letras minusculas.
  * @param buffer string a ser transformada
@@ -31,4 +33,13 @@ void exitError(char* mensagem) {
 void toLower(char* buffer) {
     for (int i = 0; buffer[i] != '\0'; i++)
         buffer[i] = tolower(buffer[i]);
+}
+
+int ifFileExists(char* nomeFicheiro) {
+    FILE* f;
+    f = fopen(nomeFicheiro, "r");
+    if (f == NULL)
+        return 0;
+    fclose(f);
+    return 1;
 }

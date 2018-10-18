@@ -15,7 +15,6 @@ int main(int argc, char** argv) {
     
     initializeStructs();
     
-    
     readCommands();
     
     return (EXIT_SUCCESS);
