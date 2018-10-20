@@ -14,5 +14,10 @@
 #ifndef SERVER_FUNCTIONS_H
 #define SERVER_FUNCTIONS_H
 #include "server-defaults.h"
+
 void checkArgs(int argc, char** argv, ServerData* sd);
+void getEnvironmentVariables(EditorData* ed);
+void defineMaxUsers(ServerData* sd);
+void initializeMEDITLines(EditorData* ed);
+
 #endif /* SERVER_FUNCTIONS_H */

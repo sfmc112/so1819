@@ -6,21 +6,18 @@
 EditorData eData;
 ServerData sData;
 
-void initializeStructs();
 
 int main(int argc, char** argv) {
+    
     checkArgs(argc, argv, &sData);
     
-    //getEnvironmentVariables();
+    getEnvironmentVariables(&eData);
     
-    initializeStructs();
+    defineMaxUsers(&sData);
+    initializeMEDITLines(&eData);
     
     readCommands();
     
     return (EXIT_SUCCESS);
-}
-
-void initializeStructs(){
-    
 }
 

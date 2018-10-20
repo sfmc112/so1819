@@ -18,7 +18,7 @@
 #include "utils.h"
 
 int cmdShutdown() {
-    puts("Comando shutdown nao implementado!");
+    
     return 0;
 }
 

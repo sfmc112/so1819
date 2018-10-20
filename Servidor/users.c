@@ -20,16 +20,16 @@
 /**
  * Função para validar username.
  * @param user nome de utilizador
- * @return 1 se valido e 0 caso contrário
+ * @return 1 se válido e 0 caso contrário
  */
 int checkUsername(char* user) {
-    if (strlen(user) <= 8) {
+    if (strlen(user) <= MAX_NAME) {
         FILE* f;
         char buffer[10];
         f = fopen(USERSDEFAULT_DB, "r");
         if (f == NULL)
             exitError("Nao consegui abrir o ficheiro!");
-        while (fscanf(f, " %[^\n]", buffer) == 1)
+        while (fscanf(f, " %7[^\n]", buffer) == 1)
             if (strcmp(buffer, user) == 0) {
                 fclose(f);
                 return 1;

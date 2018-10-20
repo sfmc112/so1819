@@ -35,6 +35,11 @@ void toLower(char* buffer) {
         buffer[i] = tolower(buffer[i]);
 }
 
+/**
+ * Função que verifica se o dado ficheiro existe
+ * @param nomeFicheiro caminho/nome do ficheiro
+ * @return 1 se existe e 0 caso contrário
+ */
 int ifFileExists(char* nomeFicheiro) {
     FILE* f;
     f = fopen(nomeFicheiro, "r");

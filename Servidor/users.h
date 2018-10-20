@@ -13,7 +13,9 @@
 
 #ifndef USERS_H
 #define USERS_H
+
 #define USERSDEFAULT_DB "medit.db"
+#define MAX_NAME 8
 
 int checkUsername(char* user);
 int addUsername();
