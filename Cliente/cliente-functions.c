@@ -13,7 +13,11 @@
 
 #include "cliente-functions.h"
 #include "cliente-utils.h"
-
+/**
+ * Verifica se ao inicializar o programa do cliente foi introduzido algum argumento.
+ * @param argc quantidade de argumentos
+ * @param argv array com os argumentos
+ */
 void checkArgs(int argc, char** argv) {
     if (argc == 3) {
         char* cmd;

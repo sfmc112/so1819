@@ -36,7 +36,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/commands.o \
-	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/server-functions.o \
+	${OBJECTDIR}/server.o \
 	${OBJECTDIR}/users.o \
 	${OBJECTDIR}/utils.o
 
@@ -70,10 +71,15 @@ ${OBJECTDIR}/commands.o: commands.c
 	${RM} "$@.d"
 	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/commands.o commands.c
 
-${OBJECTDIR}/main.o: main.c
+${OBJECTDIR}/server-functions.o: server-functions.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
+	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-functions.o server-functions.c
+
+${OBJECTDIR}/server.o: server.c
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server.o server.c
 
 ${OBJECTDIR}/users.o: users.c
 	${MKDIR} -p ${OBJECTDIR}

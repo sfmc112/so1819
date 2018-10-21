@@ -13,6 +13,7 @@
 
 #ifndef CLIENTE_UTILS_H
 #define CLIENTE_UTILS_H
+#include <stdio.h>
 void loginSession();
 void editor();
 #endif /* CLIENTE_UTILS_H */
