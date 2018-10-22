@@ -16,15 +16,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include "utils.h"
+#include "server-defaults.h"
 
-int cmdShutdown() {
-    
-    return 0;
+void cmdShutdown() {
+    exitNormal();
 }
 
-int cmdSettings() {
-    puts("Comando settings nao implementado!");
-    return 0;
+void cmdSettings(ServerData sd, EditorData ed) {
+    printf("\n\n-----SETTINGS-----\n");
+    printf("Numero de linhas do editor: %d\n", ed.lin);
+    printf("Numero de colunas do editor: %d\n", ed.col);
+    printf("Nome da base de dados de usernames: %s\n", sd.usersDB);
+    printf("Numero maximo de utilizadores ativos: %d\n\n", sd.maxUsers);
 }
 
 int cmdLoad() {
@@ -69,58 +72,3 @@ int checkCommandArgs(char* token) {
     return 0;
 }
 
-/**
- * Função responsável por ler o comando e interpreta-o.
- * @return 1 se conseguiu e 0 caso contrário
- */
-int readCommands() {
-    char comando[40]; //TODO alterar para define
-    const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
-    char* token = NULL;
-    setbuf(stdout, NULL);
-    int i;
-    while (1) {
-        printf("Introduza o comando: ");
-        scanf(" %39[^\n]", comando); //TODO temos que resolver o problema de inserir caracteres a mais! Nao esta a funcionar
-        //comando tudo em letras minusculas
-        toLower(comando);
-        //1ª parte do comando
-        token = strtok(comando, " ");
-        //Imprime comando
-        printf("%s\n", token);
-        for (i = 0; i < 8 && strcmp(listaComandos[i], token) != 0; i++)
-            ;
-        switch (i) {
-            case 0:
-                cmdShutdown();
-                break;
-            case 1:
-                cmdSettings();
-                break;
-            case 2:
-                if(checkCommandArgs(token))
-                    cmdLoad();
-                break;
-            case 3:
-                if(checkCommandArgs(token))
-                    cmdSave();
-                break;
-            case 4:
-                if(checkCommandArgs(token))
-                    cmdFree();
-                break;
-            case 5:
-                cmdStats();
-                break;
-            case 6:
-                cmdUsers();
-                break;
-            case 7:
-                cmdText();
-                break;
-            default:
-                puts("Comando invalido!");
-
-        }
-    }
-}
