@@ -35,7 +35,7 @@ void checkArgs(int argc, char** argv, ServerData* sd) {
     }
 }
 
-void defineMaxUsers(ServerData* sd){
+void defineMaxUsers(ServerData* sd) {
     //Definir número máximo de utilizadores
     sd->maxUsers = MAX_USERS;
 }
@@ -46,9 +46,6 @@ void defineMaxUsers(ServerData* sd){
  * da base de dados dos utilizadores
  */
 void initializeMEDITLines(EditorData* ed) {
-    //Definir número máximo de utilizadores
-    sData->maxUsers = MAX_USERS;
-    
     //Inicializar linhas
     int i, j;
 
@@ -67,7 +64,7 @@ void initializeMEDITLines(EditorData* ed) {
  * @param ed estrutura de dados com informação do editor de texto
  */
 void getEnvironmentVariables(EditorData* ed) {
-    char* l, c;
+    char *l, *c;
     int lin, col;
 
     l = getenv(VAR_AMBIENTE_LINHAS);
@@ -78,7 +75,8 @@ void getEnvironmentVariables(EditorData* ed) {
             ed->lin = lin;
         else
             ed->lin = VAR_MAXLINES;
-    }
+    } else
+        ed->lin = VAR_MAXLINES;
 
     c = getenv(VAR_AMBIENTE_COLUNAS);
 
@@ -88,5 +86,6 @@ void getEnvironmentVariables(EditorData* ed) {
             ed->col = col;
         else
             ed->col = VAR_MAXCOLUMNS;
-    }
+    } else
+        ed->col = VAR_MAXCOLUMNS;
 }

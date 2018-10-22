@@ -14,6 +14,14 @@
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
-int readCommands();
+void cmdShutdown();
+void cmdSettings();
+int cmdLoad();
+int cmdSave();
+int cmdFree();
+int cmdStats();
+int cmdUsers();
+int cmdText();
+int checkCommandArgs(char* token);
 
 #endif /* COMMANDS_H */
