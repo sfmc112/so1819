@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include "commands.h"
+#include "server-commands.h"
 #include "server-functions.h"
-#include "utils.h"
+#include "server-utils.h"
 
 int readCommands();
 void trataSinal(int numSinal);

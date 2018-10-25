@@ -1,18 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/* 
- * File:   cliente-functions.c
- * Author: ricardo
- * 
- * Created on October 18, 2018, 3:41 PM
- */
-
-#include "cliente-functions.h"
-#include "cliente-utils.h"
+#include "client-functions.h"
 #include "client-defaults.h"
 #include <ncurses.h>
 #include <string.h>

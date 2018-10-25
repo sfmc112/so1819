@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "cliente-functions.h"
+#include "client-functions.h"
 /*
  * 
  */

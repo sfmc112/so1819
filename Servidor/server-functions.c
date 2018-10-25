@@ -1,6 +1,6 @@
 #include "server-functions.h"
-#include "users.h"
-#include "utils.h"
+#include "server-users.h"
+#include "server-utils.h"
 #include <string.h>
 #include <stdio.h>
 #include <string.h>

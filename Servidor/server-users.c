@@ -11,11 +11,11 @@
  * Created on October 11, 2018, 12:00 PM
  */
 
-#include "users.h"
+#include "server-users.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "utils.h"
+#include "server-utils.h"
 
 /**
  * Função para validar username.

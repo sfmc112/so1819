@@ -11,11 +11,11 @@
  * Created on October 11, 2018, 12:08 PM
  */
 
-#include "commands.h"
+#include "server-commands.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "utils.h"
+#include "server-utils.h"
 #include "server-defaults.h"
 
 void cmdShutdown() {
