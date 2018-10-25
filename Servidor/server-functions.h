@@ -16,7 +16,7 @@
 #include "server-defaults.h"
 
 void checkArgs(int argc, char** argv, ServerData* sd);
-void getEnvironmentVariables(EditorData* ed);
+void getEnvironmentVariables(EditorData* ed, ServerData* sd);
 void defineMaxUsers(ServerData* sd);
 void initializeMEDITLines(EditorData* ed);
 

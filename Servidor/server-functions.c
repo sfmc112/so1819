@@ -35,11 +35,6 @@ void checkArgs(int argc, char** argv, ServerData* sd) {
     }
 }
 
-void defineMaxUsers(ServerData* sd) {
-    //Definir número máximo de utilizadores
-    sd->maxUsers = MAX_USERS;
-}
-
 /**
  * Inicializa as estruturas do servidor (variáveis globais)
  * as variáveis de linha/coluna já foram atríbuídas assim como o nome do ficheiro
@@ -62,30 +57,54 @@ void initializeMEDITLines(EditorData* ed) {
  * as variáveis presentes na estrutura EditorData caso sejam inferiores aos
  * limites máximos
  * @param ed estrutura de dados com informação do editor de texto
+ * @param sd estrutura de dados com informação do servidor
  */
-void getEnvironmentVariables(EditorData* ed) {
-    char *l, *c;
-    int lin, col;
+void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
+    //Variáveis do Editor
+    
+    char *l, *c, *t, *mu;
+    int lin, col, timeout, maxusers;
 
     l = getenv(VAR_AMBIENTE_LINHAS);
 
     if (l != NULL) {
         lin = atoi(l);
-        if (lin < VAR_MAXLINES)
+        if (lin < DEFAULT_MAXLINES)
             ed->lin = lin;
         else
-            ed->lin = VAR_MAXLINES;
+            ed->lin = DEFAULT_MAXLINES;
     } else
-        ed->lin = VAR_MAXLINES;
+        ed->lin = DEFAULT_MAXLINES;
 
     c = getenv(VAR_AMBIENTE_COLUNAS);
 
     if (c != NULL) {
         col = atoi(c);
-        if (col < VAR_MAXCOLUMNS)
+        if (col < DEFAULT_MAXCOLUMNS)
             ed->col = col;
         else
-            ed->col = VAR_MAXCOLUMNS;
+            ed->col = DEFAULT_MAXCOLUMNS;
     } else
-        ed->col = VAR_MAXCOLUMNS;
+        ed->col = DEFAULT_MAXCOLUMNS;
+    
+    t = getenv(VAR_AMBIENTE_TIMEOUT);
+
+    if (t != NULL) {
+        timeout = atoi(t);
+        ed->timeout = timeout;
+    } else
+        ed->timeout = DEFAULT_TIMEOUT;
+    
+    //Variáveis Servidor
+    
+    mu = getenv(VAR_AMBIENTE_USERS);
+
+    if (mu != NULL) {
+        maxusers = atoi(mu);
+        if (maxusers < ed->lin)
+            sd->maxUsers = maxusers;
+        else
+            sd->maxUsers = ed->lin;
+    } else
+        sd->maxUsers = DEFAULT_MAXUSERS;
 }

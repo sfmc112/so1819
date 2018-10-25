@@ -5,7 +5,6 @@
 #include "../medit-defaults.h"
 
 #define MAX_SIZE_FILENAME 50
-#define MAX_USERS 5
 
 typedef struct _serverdata ServerData;
 

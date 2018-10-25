@@ -19,9 +19,8 @@ int main(int argc, char** argv) {
 
     checkArgs(argc, argv, &sData);
 
-    getEnvironmentVariables(&eData);
+    getEnvironmentVariables(&eData, &sData);
 
-    defineMaxUsers(&sData);
     initializeMEDITLines(&eData);
 
     readCommands();
