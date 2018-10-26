@@ -12,9 +12,12 @@ void moveUp(int *posy);
 void moveDown(int *posy, int nrow);
 void moveLeft(int *posx, int posy);
 void moveRight(int *posx, int ncol);
-void changeCursorPosition(int posx, int oposx, int posy, int oposy, char cursor, char tempChar, int ncol, int nav);
+void changeCursorPosition(int posx, int oposx, int posy, int oposy, char cursor, char tempChar, int ncol, int nav, int apaga);
 void backSpaceKey(int posy, int posx, int ncol);
 void deleteKey(int posy, int posx, int ncol);
+int moveAllToTheRight(int posy, int posx, int ncol);
+void getTextoDaLinha(char* texto, int linha, int maxX);
+
 /**
  * Verifica se ao inicializar o programa do cliente foi introduzido algum argumento.
  * @param argc quantidade de argumentos
@@ -98,15 +101,17 @@ void editor() {
                 if (linha.free) {
                     linha.free = 0;
                     editMode(linha.text, posx, posy, ncol, cursor);
+                    getTextoDaLinha(linha.text, posy, ncol);
                     linha.free = 1;
                 }
                 break;
             case 27: // ESC
                 endwin();
+                printf("\n%s\n", linha.text);
                 return;
         }
         if (ch == KEY_UP || ch == KEY_DOWN || ch == KEY_LEFT || ch == KEY_RIGHT)
-            changeCursorPosition(posx, oposx, posy, oposy, cursor, tempChar, ncol, 1);
+            changeCursorPosition(posx, oposx, posy, oposy, cursor, tempChar, ncol, 1, 0);
     } while (posy != (nrow - 1) || posx != (ncol - 1));
     endwin();
 }
@@ -122,12 +127,13 @@ void editor() {
  * @param cursor Caractér que representa o cursor.
  */
 void editMode(char* text, int posx, int posy, int ncol, char cursor) {
-    int ch, oposx;
+    int ch, oposx, apaga = 0;
     char temp[DEFAULT_MAXCOLUMNS], tempChar;
     mvprintw(0, 0, "Modo de Edicao   ");
     refresh();
     strncpy(temp, text, DEFAULT_MAXCOLUMNS);
     do {
+        apaga = 0;
         ch = getch();
         oposx = posx;
         switch (ch) {
@@ -144,9 +150,11 @@ void editMode(char* text, int posx, int posy, int ncol, char cursor) {
                 moveRight(&posx, ncol);
                 break;
             case 10: // Enter
-
-                break;
+                mvprintw(0, 0, "Modo de Navegacao");
+                refresh();
+                return;
             case KEY_BACKSPACE:
+                apaga = 1;
                 backSpaceKey(posy, posx, ncol);
                 moveLeft(&posx, posy);
                 break;
@@ -159,13 +167,15 @@ void editMode(char* text, int posx, int posy, int ncol, char cursor) {
                 deleteKey(posy, posx, ncol);
                 break;
             default:
-                mvaddch(posy, posx, ch);
-                tempChar = ch;
-                moveRight(&posx, ncol);
+                if (moveAllToTheRight(posy, posx, ncol)) {
+                    mvaddch(posy, posx, ch);
+                    tempChar = ch;
+                    moveRight(&posx, ncol);
+                }
                 break;
         }
         if (ch != 10 && ch != 27)
-            changeCursorPosition(posx, oposx, posy, posy, cursor, tempChar, ncol, 0);
+            changeCursorPosition(posx, oposx, posy, posy, cursor, tempChar, ncol, 0, apaga);
     } while (posx != (ncol - 1));
 }
 
@@ -217,17 +227,19 @@ void moveRight(int *posx, int ncol) {
  * @param ncol Número de colunas.
  * @param nav 1 caso esteja em modo navegação e 0 caso contrário.
  */
-void changeCursorPosition(int posx, int oposx, int posy, int oposy, char cursor, char tempChar, int ncol, int nav) {
+void changeCursorPosition(int posx, int oposx, int posy, int oposy, char cursor, char tempChar, int ncol, int nav, int apaga) {
     if (!nav) mvprintw(0, 0, "Modo de Edicao   ");
     else mvprintw(0, 0, "Modo de Navegacao");
     mvprintw(0, ncol - 20, "Cursor: (%d, %d)  ", posy, posx);
     if (tempChar == cursor) tempChar = ' ';
     if (posx < 5) posx = 5;
     if (posy < 1) posy = 1;
-    mvaddch(oposy, oposx, tempChar);
+    if (!apaga)
+        mvaddch(oposy, oposx, tempChar);
     mvaddch(posy, posx, cursor);
     refresh();
 }
+
 /**
  * Função responsável por fazer tudo o efeito que é suposto a tecla backspace
  * fazer num editor já criado.
@@ -237,13 +249,14 @@ void changeCursorPosition(int posx, int oposx, int posy, int oposy, char cursor,
  */
 void backSpaceKey(int posy, int posx, int ncol) { //TODO CONSERTAR BUG: Está a manter o caracter onde tava o cursor!
     char tempChar;
-    for (; posx < ncol-1; posx++) {
+    for (; posx < ncol - 1; posx++) {
         tempChar = mvinch(posy, posx + 1);
         mvaddch(posy, posx, tempChar);
     }
-    mvaddch(posy, posx+1, ' ');
+    mvaddch(posy, posx + 1, ' ');
     refresh();
 }
+
 /**
  * Função responsável por fazer tudo o efeito que é suposto a tecla delete
  * fazer num editor já criado.
@@ -253,10 +266,35 @@ void backSpaceKey(int posy, int posx, int ncol) { //TODO CONSERTAR BUG: Está a 
  */
 void deleteKey(int posy, int posx, int ncol) { //TODO CONSERTAR BUG: Não está a funcionar como devia
     char tempChar;
-    for (; posx < ncol-1; posx++) {
+    for (; posx < ncol - 1; posx++) {
         tempChar = mvinch(posy, posx + 1);
         mvaddch(posy, posx, tempChar);
     }
-    mvaddch(posy, posx+1, ' ');
+    mvaddch(posy, posx + 1, ' ');
     refresh();
+}
+
+/**
+ * Função responsável por puxar os caracteres todos para a direita, para que seja
+ * possivel escrever entre palavras.
+ * @param posy Posição atual no eixo dos Y.
+ * @param posx Posição atual no eixo dos X.
+ * @param ncol Número de colunas.
+ * @return 1 se foi possivel, 0 caso contrário.
+ */
+int moveAllToTheRight(int posy, int posx, int ncol) {
+    if (mvinch(posy, ncol - 1) != ' ')
+        return 0;
+    char tempChar;
+    for (; ncol > posx; ncol--) {
+        tempChar = mvinch(posy, ncol - 1);
+        mvaddch(posy, ncol, tempChar);
+    }
+    refresh();
+    return 1;
+}
+
+void getTextoDaLinha(char* texto, int linha, int maxX) {
+    for (int i = 0; i < maxX; i++)
+        texto[i] = mvinch(linha, i + X_INDEX);
 }
