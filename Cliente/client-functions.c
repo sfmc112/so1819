@@ -91,11 +91,11 @@ void editor() {
                 moveDown(&posy, nrow);
                 break;
             case KEY_LEFT:
-                tempChar = mvinch(posy, posx - 1);
+                tempChar = mvinch(posy, posx + 1);
                 moveLeft(&posx, posy);
                 break;
             case KEY_RIGHT:
-                tempChar = mvinch(posy, posx + 1);
+                tempChar = mvinch(posy, posx - 1);
                 moveRight(&posx, ncol);
                 break;
             case 10:
