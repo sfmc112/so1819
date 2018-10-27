@@ -8,8 +8,12 @@
  * Função que termina a aplicação com erro.
  * @param mensagem mensagem de erro
  */
+void errorMessage(char* message){
+    perror(message);
+}
+
 void exitError(char* mensagem) {
-    perror(mensagem);
+    errorMessage(mensagem);
     exit(1);
 }
 
@@ -46,8 +50,10 @@ void toUpper(char* buffer) {
 int ifFileExists(char* nomeFicheiro) {
     FILE* f;
     f = fopen(nomeFicheiro, "r");
-    if (f == NULL)
+    if (f == NULL){
+        errorMessage("Ficheiro nao existe!");
         return 0;
+    }
     fclose(f);
     return 1;
 }

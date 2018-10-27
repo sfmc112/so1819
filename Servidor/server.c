@@ -46,7 +46,7 @@ int readCommands() {
         //1ª parte do comando
         token = strtok(comando, " ");
         //Imprime comando
-        printf("%s\n", token);
+        //printf("%s\n", token);
         for (i = 0; i < 8 && strcmp(listaComandos[i], token) != 0; i++)
             ;
         switch (i) {
