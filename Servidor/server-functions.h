@@ -17,7 +17,6 @@
 
 void checkArgs(int argc, char** argv, ServerData* sd);
 void getEnvironmentVariables(EditorData* ed, ServerData* sd);
-void defineMaxUsers(ServerData* sd);
 void initializeMEDITLines(EditorData* ed);
 
 #endif /* SERVER_FUNCTIONS_H */

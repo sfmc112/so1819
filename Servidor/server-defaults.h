@@ -1,8 +1,11 @@
 #ifndef SERVER_DEFAULTS_H
 #define SERVER_DEFAULTS_H
 
-
-#include "../medit-defaults.h"
+#ifdef NO_IDE
+    #include "medit-defaults.h"
+#else
+    #include "../medit-defaults.h"
+#endif
 
 #define MAX_SIZE_FILENAME 50
 

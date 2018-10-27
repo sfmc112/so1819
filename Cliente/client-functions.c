@@ -3,6 +3,7 @@
 #include <ncurses.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #define X_INDEX 5
 
@@ -53,7 +54,8 @@ void loginSession() {
     editor();
 }
 
-/** Função responsável por tudo àcerca do editor.
+/**
+ * Função responsável por tudo acerca do editor.
  */
 void editor() {
     int nrow, ncol, posx, posy, oposx, oposy;
