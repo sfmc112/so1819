@@ -69,6 +69,7 @@ void editor() {
     cbreak();
     keypad(stdscr, TRUE);
     getmaxyx(stdscr, nrow, ncol);
+    curs_set(0);
     preencheLinhas(nrow);
     posy = nrow / 2;
     posx = X_INDEX;
@@ -266,11 +267,12 @@ void backSpaceKey(int posy, int posx, int ncol) { //TODO CONSERTAR BUG: Está a 
  */
 void deleteKey(int posy, int posx, int ncol) { //TODO CONSERTAR BUG: Não está a funcionar como devia
     char tempChar;
-    for (; posx < ncol - 1; posx++) {
-        tempChar = mvinch(posy, posx + 1);
-        mvaddch(posy, posx, tempChar);
+    mvaddch(posy, ncol, ' ');
+    for (; ncol > posx; ncol--) {
+        tempChar = mvinch(posy, ncol);
+        mvaddch(posy, ncol, ' ');
+        mvaddch(posy, ncol - 1, tempChar);
     }
-    mvaddch(posy, posx + 1, ' ');
     refresh();
 }
 
