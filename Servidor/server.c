@@ -84,12 +84,20 @@ int readCommands() {
     }
 }
 
+/**
+ * Função responsável por executar o comportamento de numSinal.
+ * @param numSinal Código do sinal.
+ */
 void trataSinal(int numSinal) {
     if (numSinal == SIGUSR1) {
         exitNormal();
     }
 }
 
+/**
+ * Função responsável por redefinir o comportamento de sinal.
+ * @param sinal
+ */
 void configuraSinal(int sinal) {
     if (signal(sinal, trataSinal) == SIG_ERR) {
         exitError("Erro a tratar sinal!");

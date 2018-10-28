@@ -19,7 +19,7 @@ void checkArgs(int argc, char** argv, ServerData* sd) {
         char* cmd;
         int res;
 
-        while ((res = getopt(argc, argv, "f")) != -1) {
+        while ((res = getopt(argc, argv, "f:")) != -1) {
             switch (res) {
                 case 'f':
                     cmd = optarg;

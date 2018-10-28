@@ -229,10 +229,24 @@ void editMode(int y, int x, char* linha) {
     strncpy(linha, linhaTemp, WIN_EDITOR_MAX_X);
 }
 
+/**
+ * Esta função é responsável pela criação de uma sub janela.
+ * @param janelaMae Contexto onde vai ser criada a nova janela.
+ * @param dimY Dimensão total em altura.
+ * @param dimX Dimensão total em largura.
+ * @param startY Linha inicial.
+ * @param startX Coluna inicial.
+ * @return Nova subjanela da janelaMae.
+ */
 WINDOW * createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX) {
     return subwin(janelaMae, dimY, dimX, startY, startX);
 }
 
+/**
+ * Esta função é responsável pela configuração da janela.
+ * @param janela
+ * @param setCores cores
+ */
 void configureWindow(WINDOW* janela, int setCores) {
     wattrset(janela, setCores);
     wbkgd(janela, setCores);
@@ -240,47 +254,81 @@ void configureWindow(WINDOW* janela, int setCores) {
     wrefresh(janela);
 }
 
+/**
+ * Função responsável por escrever na janela titleWin um título.
+ */
 void writeTitle() {
     mvwprintw(titleWin, 0, 0, "%s", TITLE);
 }
 
+/**
+ * Função responsável por escrever a identicação numerada de cada linha.
+ */
 void writeLineNumbers() {
-    int i;
-
-    for (i = 0; i < WIN_LINENUM_MAX_Y; i++) {
+    for (int i = 0; i < WIN_LINENUM_MAX_Y; i++) {
         mvwprintw(lineWin, i, 0, "%02d", i);
     }
 }
 
+/**
+ * Função responsável por escrever o nome do utilizador que está a editar
+ * a linha.
+ * @param name Nome de utilizador
+ * @param line Linha
+ */
 void writeUser(char* name, int line) {
     mvwprintw(userWin, line, 0, "%s", name);
     wrefresh(userWin);
 }
 
+/**
+ * Função responsável por escrever um array de linhas no ecrã.
+ * @param text array de linhas
+ * @param nLines número de linhas
+ */
 void writeDocument(Line *text, int nLines) {
-    int i;
-    for (i = 0; i < nLines; i++)
+    for (int i = 0; i < nLines; i++)
         writeTextLine(text[i].text, i);
 }
 
+/**
+ * Função responsável por escrever um array de linhas no ecrã.
+ * @param text String a ser escrita
+ * @param line número da linha onde escrever
+ */
 void writeTextLine(char* text, int line) {
     mvwprintw(editorWin, line, 0, "%s", text);
     wrefresh(editorWin);
 }
 
+/**
+ * Função responsável por limpar o editor entre duas dimensões.
+ * @param dimY Altura
+ * @param dimX Largura
+ */
 void clearEditor(int dimY, int dimX) {
-    int i;
-    for (i = 0; i < dimY; i++) {
+    for (int i = 0; i < dimY; i++) {
         resetLine(editorWin, i, dimX);
     }
 }
 
+/**
+ * Função responsável por escrever uma linha em branco numa determinada janela.
+ * @param w Janela
+ * @param line Linha
+ * @param dimX Largura
+ */
 void resetLine(WINDOW* w, int line, int dimX) {
     for (int i = 0; i < dimX; i++)
         mvwprintw(w, line, i, " ");
     wrefresh(w);
 }
 
+/**
+ * Função responsável por atualizar o cursor e as suas respectivas coordenadas.
+ * @param y linha
+ * @param x coluna
+ */
 void refreshCursor(int y, int x) {
     int cy, cx;
     wmove(editorWin, y, x);
@@ -290,6 +338,13 @@ void refreshCursor(int y, int x) {
     wrefresh(editorWin);
 }
 
+/**
+ * Função é responsável por mover todo o texto a partir de uma posição X para a
+ * direita.
+ * @param linha
+ * @param x coluna
+ * @return 0 se falhou, 1 caso contrário
+ */
 int moveAllToTheRight(char* linha, int x) {
     int max = WIN_EDITOR_MAX_X - 1;
     if (linha[max] != ' ')
@@ -299,17 +354,32 @@ int moveAllToTheRight(char* linha, int x) {
     return 1;
 }
 
+/**
+ * Função responsável por escrever uma tecla numa posição do array.
+ * @param key Tecla
+ * @param linha string
+ * @param x posição no array
+ */
 void writeKey(int key, char* linha, int x) {
     if (moveAllToTheRight(linha, x))
         linha[x] = key;
 }
 
+/**
+ * Função responsável por extrair a informação da janela do editor para o array.
+ * @param linha string
+ * @param y linha
+ */
 void getLinha(char* linha, int y) {
-    int i;
-    for (i = 0; i < WIN_EDITOR_MAX_X; i++)
+    for (int i = 0; i < WIN_EDITOR_MAX_X; i++)
         linha[i] = mvwinch(editorWin, y, i) & A_CHARTEXT; //para extrair o caracter; wvminch devolve um chtype e não um char
 }
 
+/**
+ * Função responsável por mover todos os caractéres para a esquerda.
+ * @param linha string
+ * @param x posição no array
+ */
 void moveAllToTheLeft(char* linha, int x) {
     int max = WIN_EDITOR_MAX_X - 1;
     for (; x < max; x++)
@@ -317,6 +387,13 @@ void moveAllToTheLeft(char* linha, int x) {
     linha[WIN_EDITOR_MAX_X - 1] = ' ';
 }
 
+/**
+ * Função responsável por efetuar o comportamento normal de um backspace,
+ * ou seja, apagar caractér por caractér.
+ * @param linha string
+ * @param x posição no array
+ * @param y linha
+ */
 void backSpaceKey(char* linha, int x, int y) {
     if (x > 0) {
         moveAllToTheLeft(linha, x - 1);
@@ -325,6 +402,13 @@ void backSpaceKey(char* linha, int x, int y) {
     }
 }
 
+/**
+ * Função responsável por efetuar o comportamento normal de um delete, ou seja,
+ * apagar caractér por caractér.
+ * @param linha string
+ * @param x posição no array
+ * @param y linha
+ */
 void deleteKey(char* linha, int x, int y) {
     moveAllToTheLeft(linha, x);
     resetLine(editorWin, y, WIN_EDITOR_MAX_X);
