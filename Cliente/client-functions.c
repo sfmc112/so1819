@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include "client-defaults.h"
 // OLD VERSION
 /*
 #define X_INDEX 5
@@ -38,17 +39,20 @@ void writeUser(char* name, int line);
 void writeDocument(char* text[], int nLines);
 void writeTextLine(char* text, int line);
 void clearEditor(int dimY, int dimX);
-void resetLine(int line, int dimX);
+void resetLine(WINDOW* w, int line, int dimX);
 void writeTitle();
 void refreshCursor(int y, int x);
-void editMode(int y, int x);
+void editMode(int y, int x, char* linha);
 void writeKey(int key, char* linha, int x);
 void getLinha(char* linha, int y);
+void backSpaceKey(char* linha, int x, int y);
+void deleteKey(char* linha, int x, int y);
 //WINDOW* masterWin;
 WINDOW* titleWin;
 WINDOW* userWin;
 WINDOW* lineWin;
 WINDOW* editorWin;
+Line lines[WIN_EDITOR_MAX_Y];
 
 /**
  * Verifica se ao inicializar o programa do cliente foi introduzido algum argumento.
@@ -57,15 +61,18 @@ WINDOW* editorWin;
  */
 void checkArgs(int argc, char** argv) {
     if (argc == 3) {
-        char* cmd;
+        char *cmd;
         int res;
 
-        while ((res = getopt(argc, argv, "u")) != -1) {
+        while ((res = getopt(argc, argv, "u:")) != -1) {
             switch (res) {
                 case 'u':
                     cmd = optarg;
+                    if (strlen(cmd) < 8)
+                        editor(cmd);
+                    else
+                        loginSession();
                     //TODO Verificar se o utilizador existe do lado do servidor
-                    editor();
                     break;
             }
         }
@@ -82,13 +89,13 @@ void loginSession() {
     printf("Insira o nome de utilizador: ");
     scanf(" %8s", user);
     //TODO Verificar se o utilizador existe do lado do servidor
-    editor();
+    editor(user);
 }
 
 /**
  * Função responsável por tudo acerca do editor.
  */
-void editor() {
+void editor(char* user) { /*receber nome do utilizador e escreve-lo só em modo de edição*/
     initscr();
     start_color();
     clear();
@@ -112,7 +119,7 @@ void editor() {
 
     writeTitle();
     writeLineNumbers();
-    writeUser("RicardoB", 4);
+    //writeUser(user, 4);
 
     wmove(editorWin, 0, 0);
     wrefresh(stdscr);
@@ -129,8 +136,8 @@ void editor() {
     writeDocument(doc, 3);
     wrefresh(editorWin);
 
-    int key;
-    int x = 0, y = 0;
+    int key, x = 0, y = 0;
+    char linha[WIN_EDITOR_MAX_X];
     mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
     refreshCursor(y, x);
 
@@ -154,7 +161,9 @@ void editor() {
                 break;
             case 10:
                 //TODO SE LINHA ESTÁ LIVRE, COLOCA OCUPADA E COMEÇA EDIÇÃO
-                editMode(y, x);
+                writeUser(user, y);
+                getLinha(linha, y);
+                editMode(y, x, linha);
                 // TODO DESOCUPA A LINHA
                 mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
                 break;
@@ -165,10 +174,10 @@ void editor() {
     return;
 }
 
-void editMode(int y, int x) {
+void editMode(int y, int x, char* linha) {
     int key;
-    char linha[WIN_EDITOR_MAX_X], linhaTemp[WIN_EDITOR_MAX_X];
-    getLinha(linha,y);
+    char linhaTemp[WIN_EDITOR_MAX_X], resolverBug[WIN_EDITOR_MAX_X];
+    getLinha(resolverBug, y + 1);
     strncpy(linhaTemp, linha, WIN_EDITOR_MAX_X);
     mvwprintw(stdscr, 19, 0, "Em modo de edicao   ");
     refreshCursor(y, x);
@@ -187,19 +196,27 @@ void editMode(int y, int x) {
             case KEY_DOWN:
                 break;
             case 10:
+                resetLine(userWin, y, WIN_USER_MAX_X);
                 return;
             case KEY_BACKSPACE:
-                //apaga = 1;
-                //backSpaceKey(posy, posx, ncol);
-                //moveLeft(&posx, posy);
+                backSpaceKey(linha, x, y);
+                if (x > 0)
+                    x--;
+                break;
+            case 330:
+                deleteKey(linha, x, y);
                 break;
             default:
                 writeKey(key, linha, x);
+                resetLine(editorWin, y, WIN_EDITOR_MAX_X);
                 writeTextLine(linha, y);
                 break;
         }
-        refreshCursor(y, x);
+        if (key != 27)
+            refreshCursor(y, x);
     }
+    resetLine(userWin, y, WIN_USER_MAX_X);
+    writeTextLine(linhaTemp, y);
 }
 
 WINDOW * createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX) {
@@ -227,6 +244,7 @@ void writeLineNumbers() {
 
 void writeUser(char* name, int line) {
     mvwprintw(userWin, line, 0, "%s", name);
+    wrefresh(userWin);
 }
 
 void writeDocument(char* text[], int nLines) {
@@ -243,13 +261,14 @@ void writeTextLine(char* text, int line) {
 void clearEditor(int dimY, int dimX) {
     int i;
     for (i = 0; i < dimY; i++) {
-        resetLine(i, dimX);
+        resetLine(editorWin, i, dimX);
     }
 }
 
-void resetLine(int line, int dimX) {
+void resetLine(WINDOW* w, int line, int dimX) {
     for (int i = 0; i < dimX; i++)
-        mvwprintw(editorWin, line, i, " ");
+        mvwprintw(w, line, i, " ");
+    wrefresh(w);
 }
 
 void refreshCursor(int y, int x) {
@@ -262,29 +281,45 @@ void refreshCursor(int y, int x) {
 }
 
 int moveAllToTheRight(char* linha, int x) {
-    if (linha[WIN_EDITOR_MAX_X] != ' ')
+    int max = WIN_EDITOR_MAX_X - 1;
+    if (linha[max] != ' ')
         return 0;
-    int max=WIN_EDITOR_MAX_X;
-    for (; max > x; max--) 
-        linha[max] = linha[max-1];
+    for (; max > x; max--)
+        linha[max] = linha[max - 1];
     return 1;
 }
 
 void writeKey(int key, char* linha, int x) {
-    if(moveAllToTheRight(linha, x))
-        linha[x]=key;
+    if (moveAllToTheRight(linha, x))
+        linha[x] = key;
 }
 
 void getLinha(char* linha, int y) {
     int i;
-    for (i = 0; i <= WIN_EDITOR_MAX_X; i++) {
-        linha[i] = mvwinch(editorWin, y, i);
+    for (i = 0; i < WIN_EDITOR_MAX_X; i++)
+        linha[i] = mvwinch(editorWin, y, i) & A_CHARTEXT; //para extrair o caracter; wvminch devolve um chtype e não um char
+}
+
+void moveAllToTheLeft(char* linha, int x) {
+    int max = WIN_EDITOR_MAX_X - 1;
+    for (; x < max; x++)
+        linha[x] = linha[x + 1];
+    linha[WIN_EDITOR_MAX_X - 1] = ' ';
+}
+
+void backSpaceKey(char* linha, int x, int y) {
+    if (x > 0) {
+        moveAllToTheLeft(linha, x - 1);
+        resetLine(editorWin, y, WIN_EDITOR_MAX_X);
+        writeTextLine(linha, y);
     }
 }
 
-
-
-
+void deleteKey(char* linha, int x, int y) {
+    moveAllToTheLeft(linha, x);
+    resetLine(editorWin, y, WIN_EDITOR_MAX_X);
+    writeTextLine(linha, y);
+}
 
 
 
