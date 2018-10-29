@@ -149,7 +149,7 @@ void editor(char* user) { /*receber nome do utilizador e escreve-lo só em modo 
     //char linha[WIN_EDITOR_MAX_X];
     mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
     refreshCursor(y, x);
-    
+
     while ((key = getch()) != KEY_ESC) {
         switch (key) {
             case KEY_LEFT:
@@ -186,6 +186,12 @@ void editor(char* user) { /*receber nome do utilizador e escreve-lo só em modo 
     return;
 }
 
+/**
+ * Esta função é responsável por gerir a edição de linha.
+ * @param y Posição Y do cursor
+ * @param x Posição X do cursor
+ * @param linha linha de texto
+ */
 void editMode(int y, int x, char* linha) {
     int key;
     char linhaTemp[WIN_EDITOR_MAX_X];
@@ -221,7 +227,7 @@ void editMode(int y, int x, char* linha) {
                 writeKey(key, linha, x);
                 resetLine(editorWin, y, WIN_EDITOR_MAX_X);
                 writeTextLine(linha, y);
-                if (x < WIN_EDITOR_MAX_X-1)
+                if (x < WIN_EDITOR_MAX_X - 1)
                     x++;
                 break;
         }
@@ -344,7 +350,7 @@ void refreshCursor(int y, int x) {
 /**
  * Função é responsável por mover todo o texto a partir de uma posição X para a
  * direita.
- * @param linha
+ * @param linha linha de texto
  * @param x coluna
  * @return 0 se falhou, 1 caso contrário
  */
@@ -360,7 +366,7 @@ int moveAllToTheRight(char* linha, int x) {
 /**
  * Função responsável por escrever uma tecla numa posição do array.
  * @param key Tecla
- * @param linha string
+ * @param linha linha de texto
  * @param x posição no array
  */
 void writeKey(int key, char* linha, int x) {
@@ -370,7 +376,7 @@ void writeKey(int key, char* linha, int x) {
 
 /**
  * Função responsável por extrair a informação da janela do editor para o array.
- * @param linha string
+ * @param linha linha de texto
  * @param y linha
  */
 void getLinha(char* linha, int y) {
@@ -380,7 +386,7 @@ void getLinha(char* linha, int y) {
 
 /**
  * Função responsável por mover todos os caractéres para a esquerda.
- * @param linha string
+ * @param linha linha de texto
  * @param x posição no array
  */
 void moveAllToTheLeft(char* linha, int x) {
@@ -393,7 +399,7 @@ void moveAllToTheLeft(char* linha, int x) {
 /**
  * Função responsável por efetuar o comportamento normal de um backspace,
  * ou seja, apagar caractér por caractér.
- * @param linha string
+ * @param linha linha de texto
  * @param x posição no array
  * @param y linha
  */
@@ -408,7 +414,7 @@ void backSpaceKey(char* linha, int x, int y) {
 /**
  * Função responsável por efetuar o comportamento normal de um delete, ou seja,
  * apagar caractér por caractér.
- * @param linha string
+ * @param linha linha de texto
  * @param x posição no array
  * @param y linha
  */
