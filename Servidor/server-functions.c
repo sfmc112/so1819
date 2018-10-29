@@ -28,9 +28,10 @@ void checkArgs(int argc, char** argv, ServerData* sd) {
                     if (ifFileExists(cmd)) {
                         char* token = strtok(temp, ".");
                         token = strtok(NULL, ".");
-                        if (strcmp(token, "db") != 0)
+                        if (strcmp(token, "db") != 0) {
                             printf("A extensão de ficheiro é inválida.\n");
-                        else
+                            strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
+                        } else
                             strncpy(sd->usersDB, cmd, MAX_SIZE_FILENAME);
                     } else
                         strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
