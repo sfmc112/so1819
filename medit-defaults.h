@@ -13,12 +13,14 @@
 
 //Definição das estruturas de dados
 
-typedef struct _editordata EditorData;
+
 
 typedef struct _line {
     int free; // 1 se está livre, 0 se está ocupado por um utilizador
     char text[DEFAULT_MAXCOLUMNS]; // Representa uma linha de texto
 } Line;
+
+typedef struct _editordata EditorData;
 
 struct _editordata {
     int lin; // Número de linhas que o editor possui
