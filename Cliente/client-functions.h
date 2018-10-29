@@ -2,6 +2,6 @@
 #define CLIENT_FUNCTIONS_H
 void checkArgs(int argc, char** argv);
 void loginSession();
-void editor();
-void editMode(char* text, int posx, int posy, int ncol, char cursor);
+void editor(char* user);
+void editMode(int y, int x, char* linha);
 #endif /* CLIENT_FUNCTIONS_H */

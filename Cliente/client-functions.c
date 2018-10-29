@@ -4,7 +4,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
-
+#include "client-defaults.h"
+// OLD VERSION
+/*
 #define X_INDEX 5
 
 void resetLine(char *text);
@@ -18,6 +20,42 @@ void backSpaceKey(int posy, int posx, int ncol);
 void deleteKey(int posy, int posx, int ncol);
 int moveAllToTheRight(int posy, int posx, int ncol);
 void getTextoDaLinha(char* texto, int linha, int maxX);
+ */
+
+#define TITLE "MEDIT EDITOR--------------------filename.xpto-----------------------------------"
+#define WIN_EDITOR_MAX_X 45
+#define WIN_EDITOR_MAX_Y 15
+#define WIN_USER_MAX_X 8
+#define WIN_USER_MAX_Y WIN_EDITOR_MAX_Y
+#define WIN_LINENUM_MAX_X 2
+#define WIN_LINENUM_MAX_Y WIN_EDITOR_MAX_Y
+#define WIN_TITLE_MAX_X COLS
+#define WIN_TITLE_MAX_Y 1
+#define KEY_ESC 27
+#define KEY_ENTR 10
+#define KEY_DELETE 330
+
+WINDOW* createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX);
+void configureWindow(WINDOW* janela, int setCores);
+void writeLineNumbers();
+void writeUser(char* name, int line);
+void writeDocument(Line *text, int nLines);
+void writeTextLine(char* text, int line);
+void clearEditor(int dimY, int dimX);
+void resetLine(WINDOW* w, int line, int dimX);
+void writeTitle();
+void refreshCursor(int y, int x);
+void editMode(int y, int x, char* linha);
+void writeKey(int key, char* linha, int x);
+void getLinha(char* linha, int y);
+void backSpaceKey(char* linha, int x, int y);
+void deleteKey(char* linha, int x, int y);
+//WINDOW* masterWin;
+WINDOW* titleWin;
+WINDOW* userWin;
+WINDOW* lineWin;
+WINDOW* editorWin;
+Line lines[WIN_EDITOR_MAX_Y];
 
 /**
  * Verifica se ao inicializar o programa do cliente foi introduzido algum argumento.
@@ -26,15 +64,18 @@ void getTextoDaLinha(char* texto, int linha, int maxX);
  */
 void checkArgs(int argc, char** argv) {
     if (argc == 3) {
-        char* cmd;
+        char *cmd;
         int res;
 
-        while ((res = getopt(argc, argv, "u")) != -1) {
+        while ((res = getopt(argc, argv, "u:")) != -1) {
             switch (res) {
                 case 'u':
                     cmd = optarg;
+                    if (strlen(cmd) <= 8)
+                        editor(cmd);
+                    else
+                        loginSession();
                     //TODO Verificar se o utilizador existe do lado do servidor
-                    editor();
                     break;
             }
         }
@@ -51,254 +92,328 @@ void loginSession() {
     printf("Insira o nome de utilizador: ");
     scanf(" %8s", user);
     //TODO Verificar se o utilizador existe do lado do servidor
-    editor();
+    editor(user);
 }
 
 /**
  * Função responsável por tudo acerca do editor.
  */
-void editor() {
-    int nrow, ncol, posx, posy, oposx, oposy;
-    int ch;
-    char cursor = 219, tempChar;
-    Line linha;
-    linha.free = 1; // TODO Isto terá que sair daqui posteriormente
-    resetLine(linha.text); // TODO Isto terá que sair daqui posteriormente
-
+void editor(char* user) { /*receber nome do utilizador e escreve-lo só em modo de edição*/
     initscr();
+    start_color();
     clear();
-    noecho();
     cbreak();
     keypad(stdscr, TRUE);
-    getmaxyx(stdscr, nrow, ncol);
-    curs_set(0);
-    preencheLinhas(nrow);
-    posy = nrow / 2;
-    posx = X_INDEX;
-    mvprintw(0, 0, "Modo de Navegacao");
-    mvprintw(0, ncol - 20, "Cursor: (%d, %d)  ", posy, posx);
-    mvaddch(posy, posx, cursor);
-    refresh();
-    do {
-        ch = getch();
-        oposy = posy;
-        oposx = posx;
-        switch (ch) {
-            case KEY_UP:
-                tempChar = mvinch(posy - 1, posx);
-                moveUp(&posy);
-                break;
-            case KEY_DOWN:
-                tempChar = mvinch(posy + 1, posx);
-                moveDown(&posy, nrow);
-                break;
+    noecho();
+
+    init_pair(1, COLOR_BLACK, COLOR_CYAN);
+    init_pair(2, COLOR_BLACK, COLOR_WHITE);
+    init_pair(3, COLOR_WHITE, COLOR_BLACK);
+
+    titleWin = createSubWindow(stdscr, WIN_TITLE_MAX_Y, WIN_TITLE_MAX_X, 0, 0);
+    userWin = createSubWindow(stdscr, WIN_USER_MAX_Y, WIN_USER_MAX_X, WIN_TITLE_MAX_Y + 1, 0);
+    lineWin = createSubWindow(stdscr, WIN_LINENUM_MAX_Y, WIN_LINENUM_MAX_X, WIN_TITLE_MAX_Y + 1, WIN_USER_MAX_X + 1);
+    editorWin = createSubWindow(stdscr, WIN_EDITOR_MAX_Y, WIN_EDITOR_MAX_X, WIN_TITLE_MAX_Y + 1, WIN_LINENUM_MAX_X + WIN_USER_MAX_X + 2);
+
+    configureWindow(userWin, COLOR_PAIR(3));
+    configureWindow(lineWin, COLOR_PAIR(3));
+    configureWindow(editorWin, COLOR_PAIR(2));
+    configureWindow(titleWin, COLOR_PAIR(1));
+
+    writeTitle();
+    writeLineNumbers();
+    //writeUser(user, 4);
+
+    wmove(editorWin, 0, 0);
+    wrefresh(stdscr);
+    wrefresh(editorWin);
+
+    char* doc[WIN_EDITOR_MAX_Y] = {
+        "Ola tudo fixe isto e o documento brutal",
+        "vai ter duas linhas e ja e bem bom",
+        "oops afinal tem mais, isto e so um teste!"
+    };
+    for (int i = 0; i < WIN_EDITOR_MAX_Y; i++) {
+        lines[i].free = 1;
+        for (int j = 0; j < WIN_EDITOR_MAX_X; j++) {
+            lines[i].text[j] = ' ';
+        }
+
+    }
+
+    clearEditor(WIN_EDITOR_MAX_Y, WIN_EDITOR_MAX_X);
+    writeDocument(lines, WIN_EDITOR_MAX_Y);
+    wrefresh(editorWin);
+
+    int key, x = 0, y = 0;
+    //char linha[WIN_EDITOR_MAX_X];
+    mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
+    refreshCursor(y, x);
+    
+    while ((key = getch()) != KEY_ESC) {
+        switch (key) {
             case KEY_LEFT:
-                tempChar = mvinch(posy, posx - 1);
-                moveLeft(&posx, posy);
+                if (x > 0)
+                    x--;
                 break;
             case KEY_RIGHT:
-                tempChar = mvinch(posy, posx + 1);
-                moveRight(&posx, ncol);
+                if (x < WIN_EDITOR_MAX_X)
+                    x++;
                 break;
-            case 10:
-                if (linha.free) {
-                    linha.free = 0;
-                    editMode(linha.text, posx, posy, ncol, cursor);
-                    getTextoDaLinha(linha.text, posy, ncol);
-                    linha.free = 1;
-                }
+            case KEY_UP:
+                if (y > 0)
+                    y--;
                 break;
-            case 27: // ESC
-                endwin();
-                printf("\n%s\n", linha.text);
-                return;
+            case KEY_DOWN:
+                if (y < WIN_EDITOR_MAX_Y)
+                    y++;
+                break;
+            case KEY_ENTR:
+                //TODO SE LINHA ESTÁ LIVRE, COLOCA OCUPADA E COMEÇA EDIÇÃO
+                writeUser(user, y);
+                //getLinha(linha, y);
+                lines[y].free = 0;
+                editMode(y, x, lines[y].text);
+                writeDocument(lines, WIN_EDITOR_MAX_Y);
+                lines[y].free = 1;
+                // TODO DESOCUPA A LINHA
+                mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
+                break;
         }
-        if (ch == KEY_UP || ch == KEY_DOWN || ch == KEY_LEFT || ch == KEY_RIGHT)
-            changeCursorPosition(posx, oposx, posy, oposy, cursor, tempChar, ncol, 1, 0);
-    } while (posy != (nrow - 1) || posx != (ncol - 1));
+        refreshCursor(y, x);
+    }
     endwin();
+    return;
 }
 
-/**
- * Função denominada como modo de edição. Esta é a função que faz com que o
- * utilizador possa escrever, apagar, gravar, descartar alterações, entre outras
- * funcionalidades.
- * @param text String que estava na linha antes de começar a ser editada.
- * @param posx Posição atual no eixo dos X.
- * @param posy Posição atual no eixo dos Y.
- * @param ncol Número de colunas.
- * @param cursor Caractér que representa o cursor.
- */
-void editMode(char* text, int posx, int posy, int ncol, char cursor) {
-    int ch, oposx, apaga = 0;
-    char temp[DEFAULT_MAXCOLUMNS], tempChar;
-    mvprintw(0, 0, "Modo de Edicao   ");
-    refresh();
-    strncpy(temp, text, DEFAULT_MAXCOLUMNS);
-    do {
-        apaga = 0;
-        ch = getch();
-        oposx = posx;
-        switch (ch) {
+void editMode(int y, int x, char* linha) {
+    int key;
+    char linhaTemp[WIN_EDITOR_MAX_X];
+    strncpy(linhaTemp, linha, WIN_EDITOR_MAX_X);
+    mvwprintw(stdscr, 19, 0, "Em modo de edicao   ");
+    refreshCursor(y, x);
+    while ((key = getch()) != KEY_ESC) {
+        switch (key) {
+            case KEY_LEFT:
+                if (x > 0)
+                    x--;
+                break;
+            case KEY_RIGHT:
+                if (x < WIN_EDITOR_MAX_X)
+                    x++;
+                break;
             case KEY_UP:
                 break;
             case KEY_DOWN:
                 break;
-            case KEY_LEFT:
-                tempChar = mvinch(posy, posx - 1);
-                moveLeft(&posx, posy);
-                break;
-            case KEY_RIGHT:
-                tempChar = mvinch(posy, posx + 1);
-                moveRight(&posx, ncol);
-                break;
-            case 10: // Enter
-                mvprintw(0, 0, "Modo de Navegacao");
-                refresh();
+            case KEY_ENTR:
+                resetLine(userWin, y, WIN_USER_MAX_X);
                 return;
             case KEY_BACKSPACE:
-                apaga = 1;
-                backSpaceKey(posy, posx, ncol);
-                moveLeft(&posx, posy);
+                backSpaceKey(linha, x, y);
+                if (x > 0)
+                    x--;
                 break;
-            case 27: // ESC
-                mvprintw(posy, X_INDEX, temp);
-                mvprintw(0, 0, "Modo de Navegacao");
-                refresh();
-                return;
-            case 127:
-                deleteKey(posy, posx, ncol);
+            case KEY_DELETE:
+                deleteKey(linha, x, y);
                 break;
             default:
-                if (moveAllToTheRight(posy, posx, ncol)) {
-                    mvaddch(posy, posx, ch);
-                    tempChar = ch;
-                    moveRight(&posx, ncol);
-                }
+                writeKey(key, linha, x);
+                resetLine(editorWin, y, WIN_EDITOR_MAX_X);
+                writeTextLine(linha, y);
+                if (x < WIN_EDITOR_MAX_X-1)
+                    x++;
                 break;
         }
-        if (ch != 10 && ch != 27)
-            changeCursorPosition(posx, oposx, posy, posy, cursor, tempChar, ncol, 0, apaga);
-    } while (posx != (ncol - 1));
+        if (key != KEY_ESC)
+            refreshCursor(y, x);
+    }
+    resetLine(userWin, y, WIN_USER_MAX_X);
+    strncpy(linha, linhaTemp, WIN_EDITOR_MAX_X);
 }
 
 /**
- * Esta função inicializa as linhas.
- * @param text string para ser inicializada
+ * Esta função é responsável pela criação de uma sub janela.
+ * @param janelaMae Contexto onde vai ser criada a nova janela.
+ * @param dimY Dimensão total em altura.
+ * @param dimX Dimensão total em largura.
+ * @param startY Linha inicial.
+ * @param startX Coluna inicial.
+ * @return Nova subjanela da janelaMae.
  */
-void resetLine(char *text) {
-    for (int i = 0; i < 45; i++)
-        text[i] = ' ';
+WINDOW * createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX) {
+    return subwin(janelaMae, dimY, dimX, startY, startX);
 }
 
 /**
- * Esta função enumera as linhas do editor.
- * @param rows quantidade de linhas a enumerar.
+ * Esta função é responsável pela configuração da janela.
+ * @param janela
+ * @param setCores cores
  */
-void preencheLinhas(int rows) {
-    for (int i = 1; i <= rows; i++) {
-        mvprintw(i, 0, "%02d - ", i - 1);
+void configureWindow(WINDOW* janela, int setCores) {
+    wattrset(janela, setCores);
+    wbkgd(janela, setCores);
+    wclear(janela);
+    wrefresh(janela);
+}
+
+/**
+ * Função responsável por escrever na janela titleWin um título.
+ */
+void writeTitle() {
+    mvwprintw(titleWin, 0, 0, "%s", TITLE);
+}
+
+/**
+ * Função responsável por escrever a identicação numerada de cada linha.
+ */
+void writeLineNumbers() {
+    for (int i = 0; i < WIN_LINENUM_MAX_Y; i++) {
+        mvwprintw(lineWin, i, 0, "%02d", i);
     }
 }
 
-void moveUp(int *posy) {
-    *posy = (*posy > 0) ? *posy - 1 : *posy;
-}
-
-void moveDown(int *posy, int nrow) {
-    *posy = (*posy < (nrow - 1)) ? *posy + 1 : *posy;
-}
-
-void moveLeft(int *posx, int posy) {
-    *posx = (*posx > 0) ? *posx - 1 : posy;
-}
-
-void moveRight(int *posx, int ncol) {
-    *posx = (*posx < (ncol - 1)) ? *posx + 1 : *posx;
+/**
+ * Função responsável por escrever o nome do utilizador que está a editar
+ * a linha.
+ * @param name Nome de utilizador
+ * @param line Linha
+ */
+void writeUser(char* name, int line) {
+    mvwprintw(userWin, line, 0, "%s", name);
+    wrefresh(userWin);
 }
 
 /**
- * Esta função é responsável por atualizar o cabeçalho (modo ativo / localização
- * do cursor). Também verifica os limites e atualiza o cursor, mantendo o
- * caractér que estava anteriormente no seu respectivo lugar.
- * @param posx Posição atual no eixo dos X.
- * @param oposx Posição anterior no eixo dos X.
- * @param posy Posição atual no eixo dos Y.
- * @param oposy Posição anterior no eixo dos Y.
- * @param cursor Caractér que representa o cursor.
- * @param tempChar Caractér que estava antes do cursor ficar por cima.
- * @param ncol Número de colunas.
- * @param nav 1 caso esteja em modo navegação e 0 caso contrário.
+ * Função responsável por escrever um array de linhas no ecrã.
+ * @param text array de linhas
+ * @param nLines número de linhas
  */
-void changeCursorPosition(int posx, int oposx, int posy, int oposy, char cursor, char tempChar, int ncol, int nav, int apaga) {
-    if (!nav) mvprintw(0, 0, "Modo de Edicao   ");
-    else mvprintw(0, 0, "Modo de Navegacao");
-    mvprintw(0, ncol - 20, "Cursor: (%d, %d)  ", posy, posx);
-    if (tempChar == cursor) tempChar = ' ';
-    if (posx < 5) posx = 5;
-    if (posy < 1) posy = 1;
-    if (!apaga)
-        mvaddch(oposy, oposx, tempChar);
-    mvaddch(posy, posx, cursor);
-    refresh();
+void writeDocument(Line *text, int nLines) {
+    for (int i = 0; i < nLines; i++)
+        writeTextLine(text[i].text, i);
 }
 
 /**
- * Função responsável por fazer tudo o efeito que é suposto a tecla backspace
- * fazer num editor já criado.
- * @param posy Posição atual no eixo dos Y.
- * @param posx Posição atual no eixo dos X.
- * @param ncol Número de colunas.
+ * Função responsável por escrever um array de linhas no ecrã.
+ * @param text String a ser escrita
+ * @param line número da linha onde escrever
  */
-void backSpaceKey(int posy, int posx, int ncol) { //TODO CONSERTAR BUG: Está a manter o caracter onde tava o cursor!
-    char tempChar;
-    for (; posx < ncol - 1; posx++) {
-        tempChar = mvinch(posy, posx + 1);
-        mvaddch(posy, posx, tempChar);
+void writeTextLine(char* text, int line) {
+    mvwprintw(editorWin, line, 0, "%s", text);
+    wrefresh(editorWin);
+}
+
+/**
+ * Função responsável por limpar o editor entre duas dimensões.
+ * @param dimY Altura
+ * @param dimX Largura
+ */
+void clearEditor(int dimY, int dimX) {
+    for (int i = 0; i < dimY; i++) {
+        resetLine(editorWin, i, dimX);
     }
-    mvaddch(posy, posx + 1, ' ');
-    refresh();
 }
 
 /**
- * Função responsável por fazer tudo o efeito que é suposto a tecla delete
- * fazer num editor já criado.
- * @param posy Posição atual no eixo dos Y.
- * @param posx Posição atual no eixo dos X.
- * @param ncol Número de colunas.
+ * Função responsável por escrever uma linha em branco numa determinada janela.
+ * @param w Janela
+ * @param line Linha
+ * @param dimX Largura
  */
-void deleteKey(int posy, int posx, int ncol) { //TODO CONSERTAR BUG: Não está a funcionar como devia
-    char tempChar;
-    mvaddch(posy, ncol, ' ');
-    for (; ncol > posx; ncol--) {
-        tempChar = mvinch(posy, ncol);
-        mvaddch(posy, ncol, ' ');
-        mvaddch(posy, ncol - 1, tempChar);
-    }
-    refresh();
+void resetLine(WINDOW* w, int line, int dimX) {
+    for (int i = 0; i < dimX; i++)
+        mvwprintw(w, line, i, " ");
+    wrefresh(w);
 }
 
 /**
- * Função responsável por puxar os caracteres todos para a direita, para que seja
- * possivel escrever entre palavras.
- * @param posy Posição atual no eixo dos Y.
- * @param posx Posição atual no eixo dos X.
- * @param ncol Número de colunas.
- * @return 1 se foi possivel, 0 caso contrário.
+ * Função responsável por atualizar o cursor e as suas respectivas coordenadas.
+ * @param y linha
+ * @param x coluna
  */
-int moveAllToTheRight(int posy, int posx, int ncol) {
-    if (mvinch(posy, ncol - 1) != ' ')
+void refreshCursor(int y, int x) {
+    int cy, cx;
+    wmove(editorWin, y, x);
+    getyx(editorWin, cy, cx);
+    mvwprintw(stdscr, 20, 0, "l: %02d\tc: %02d", cy, cx);
+    wrefresh(stdscr);
+    wrefresh(editorWin);
+}
+
+/**
+ * Função é responsável por mover todo o texto a partir de uma posição X para a
+ * direita.
+ * @param linha
+ * @param x coluna
+ * @return 0 se falhou, 1 caso contrário
+ */
+int moveAllToTheRight(char* linha, int x) {
+    int max = WIN_EDITOR_MAX_X - 1;
+    if (linha[max] != ' ')
         return 0;
-    char tempChar;
-    for (; ncol > posx; ncol--) {
-        tempChar = mvinch(posy, ncol - 1);
-        mvaddch(posy, ncol, tempChar);
-    }
-    refresh();
+    for (; max > x; max--)
+        linha[max] = linha[max - 1];
     return 1;
 }
 
-void getTextoDaLinha(char* texto, int linha, int maxX) {
-    for (int i = 0; i < maxX; i++)
-        texto[i] = mvinch(linha, i + X_INDEX);
+/**
+ * Função responsável por escrever uma tecla numa posição do array.
+ * @param key Tecla
+ * @param linha string
+ * @param x posição no array
+ */
+void writeKey(int key, char* linha, int x) {
+    if (moveAllToTheRight(linha, x))
+        linha[x] = key;
+}
+
+/**
+ * Função responsável por extrair a informação da janela do editor para o array.
+ * @param linha string
+ * @param y linha
+ */
+void getLinha(char* linha, int y) {
+    for (int i = 0; i < WIN_EDITOR_MAX_X; i++)
+        linha[i] = mvwinch(editorWin, y, i) & A_CHARTEXT; //para extrair o caracter; wvminch devolve um chtype e não um char
+}
+
+/**
+ * Função responsável por mover todos os caractéres para a esquerda.
+ * @param linha string
+ * @param x posição no array
+ */
+void moveAllToTheLeft(char* linha, int x) {
+    int max = WIN_EDITOR_MAX_X - 1;
+    for (; x < max; x++)
+        linha[x] = linha[x + 1];
+    linha[WIN_EDITOR_MAX_X - 1] = ' ';
+}
+
+/**
+ * Função responsável por efetuar o comportamento normal de um backspace,
+ * ou seja, apagar caractér por caractér.
+ * @param linha string
+ * @param x posição no array
+ * @param y linha
+ */
+void backSpaceKey(char* linha, int x, int y) {
+    if (x > 0) {
+        moveAllToTheLeft(linha, x - 1);
+        resetLine(editorWin, y, WIN_EDITOR_MAX_X);
+        writeTextLine(linha, y);
+    }
+}
+
+/**
+ * Função responsável por efetuar o comportamento normal de um delete, ou seja,
+ * apagar caractér por caractér.
+ * @param linha string
+ * @param x posição no array
+ * @param y linha
+ */
+void deleteKey(char* linha, int x, int y) {
+    moveAllToTheLeft(linha, x);
+    resetLine(editorWin, y, WIN_EDITOR_MAX_X);
+    writeTextLine(linha, y);
 }

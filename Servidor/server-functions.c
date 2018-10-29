@@ -17,15 +17,23 @@
 void checkArgs(int argc, char** argv, ServerData* sd) {
     if (argc == 3) {
         char* cmd;
+        char temp[FILENAME_MAX];
         int res;
 
-        while ((res = getopt(argc, argv, "f")) != -1) {
+        while ((res = getopt(argc, argv, "f:")) != -1) {
             switch (res) {
                 case 'f':
                     cmd = optarg;
-                    if (ifFileExists(cmd))
-                        strncpy(sd->usersDB, cmd, MAX_SIZE_FILENAME);
-                    else
+                    strncpy(temp, cmd, FILENAME_MAX);
+                    if (ifFileExists(cmd)) {
+                        char* token = strtok(temp, ".");
+                        token = strtok(NULL, ".");
+                        if (strcmp(token, "db") != 0) {
+                            printf("A extensão de ficheiro é inválida.\n");
+                            strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
+                        } else
+                            strncpy(sd->usersDB, cmd, MAX_SIZE_FILENAME);
+                    } else
                         strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
                     break;
             }
@@ -61,7 +69,7 @@ void initializeMEDITLines(EditorData* ed) {
  */
 void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
     //Variáveis do Editor
-    
+
     char *l, *c, *t, *mu;
     int lin, col, timeout, maxusers;
 
@@ -86,7 +94,7 @@ void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
             ed->col = DEFAULT_MAXCOLUMNS;
     } else
         ed->col = DEFAULT_MAXCOLUMNS;
-    
+
     t = getenv(VAR_AMBIENTE_TIMEOUT);
 
     if (t != NULL) {
@@ -94,9 +102,9 @@ void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
         ed->timeout = timeout;
     } else
         ed->timeout = DEFAULT_TIMEOUT;
-    
+
     //Variáveis Servidor
-    
+
     mu = getenv(VAR_AMBIENTE_USERS);
 
     if (mu != NULL) {
