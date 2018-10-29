@@ -50,6 +50,7 @@ get_ficheiros :
 #Projeto Servidor
 	cp ../../Servidor/*.c .
 	cp ../../Servidor/*.h .
+	cp ../../Servidor/*.db .
 #Buscar Header file comum
 	cp ../../medit-defaults.h .
 	cp ../../medit-defaults.h .

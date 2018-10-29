@@ -31,6 +31,9 @@ void getTextoDaLinha(char* texto, int linha, int maxX);
 #define WIN_LINENUM_MAX_Y WIN_EDITOR_MAX_Y
 #define WIN_TITLE_MAX_X COLS
 #define WIN_TITLE_MAX_Y 1
+#define KEY_ESC 27
+#define KEY_ENTR 10
+#define KEY_DELETE 330
 
 WINDOW* createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX);
 void configureWindow(WINDOW* janela, int setCores);
@@ -68,7 +71,7 @@ void checkArgs(int argc, char** argv) {
             switch (res) {
                 case 'u':
                     cmd = optarg;
-                    if (strlen(cmd) < 8)
+                    if (strlen(cmd) <= 8)
                         editor(cmd);
                     else
                         loginSession();
@@ -146,8 +149,8 @@ void editor(char* user) { /*receber nome do utilizador e escreve-lo só em modo 
     //char linha[WIN_EDITOR_MAX_X];
     mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
     refreshCursor(y, x);
-
-    while ((key = getch()) != 27) {
+    
+    while ((key = getch()) != KEY_ESC) {
         switch (key) {
             case KEY_LEFT:
                 if (x > 0)
@@ -165,7 +168,7 @@ void editor(char* user) { /*receber nome do utilizador e escreve-lo só em modo 
                 if (y < WIN_EDITOR_MAX_Y)
                     y++;
                 break;
-            case 10:
+            case KEY_ENTR:
                 //TODO SE LINHA ESTÁ LIVRE, COLOCA OCUPADA E COMEÇA EDIÇÃO
                 writeUser(user, y);
                 //getLinha(linha, y);
@@ -189,7 +192,7 @@ void editMode(int y, int x, char* linha) {
     strncpy(linhaTemp, linha, WIN_EDITOR_MAX_X);
     mvwprintw(stdscr, 19, 0, "Em modo de edicao   ");
     refreshCursor(y, x);
-    while ((key = getch()) != 27) {
+    while ((key = getch()) != KEY_ESC) {
         switch (key) {
             case KEY_LEFT:
                 if (x > 0)
@@ -203,7 +206,7 @@ void editMode(int y, int x, char* linha) {
                 break;
             case KEY_DOWN:
                 break;
-            case 10:
+            case KEY_ENTR:
                 resetLine(userWin, y, WIN_USER_MAX_X);
                 return;
             case KEY_BACKSPACE:
@@ -211,18 +214,18 @@ void editMode(int y, int x, char* linha) {
                 if (x > 0)
                     x--;
                 break;
-            case 330:
+            case KEY_DELETE:
                 deleteKey(linha, x, y);
                 break;
             default:
                 writeKey(key, linha, x);
                 resetLine(editorWin, y, WIN_EDITOR_MAX_X);
                 writeTextLine(linha, y);
-                if (x < WIN_EDITOR_MAX_X)
+                if (x < WIN_EDITOR_MAX_X-1)
                     x++;
                 break;
         }
-        if (key != 27)
+        if (key != KEY_ESC)
             refreshCursor(y, x);
     }
     resetLine(userWin, y, WIN_USER_MAX_X);
