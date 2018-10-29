@@ -12,8 +12,11 @@
 typedef struct _serverdata ServerData;
 
 struct _serverdata{
-    char usersDB[MAX_SIZE_FILENAME]; // Nome do ficheiro da base dados de utilizadores
+    // Nome do ficheiro da base dados de utilizadores
+    char usersDB[MAX_SIZE_FILENAME]; 
+    //Número máximo de utilizadores
     int maxUsers;
 };
+
 #endif /* SERVER_DEFAULTS_H */
 
