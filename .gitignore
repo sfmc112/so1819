@@ -57,3 +57,5 @@ dkms.conf
 /Servidor/dist/
 /Testes/PipesV1/Patrao/dist/
 /Testes/PipesV1/Patrao/build/
+/Testes/PipesV1/Empregado/dist/
+/Testes/PipesV1/Empregado/build/
