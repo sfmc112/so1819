@@ -13,8 +13,6 @@
 
 //Definição das estruturas de dados
 
-
-
 typedef struct _line {
     int free; // 1 se está livre, 0 se está ocupado por um utilizador
     char text[DEFAULT_MAXCOLUMNS]; // Representa uma linha de texto
