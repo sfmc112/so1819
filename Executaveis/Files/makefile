@@ -3,7 +3,7 @@ NCURSES=-lncurses
 HEADERS=-I.
 RUN=-D NO_IDE
 SERVER_DEPENDENCIES=server-utils.o server-users.o server-commands.o server-functions.o
-CLIENT_DEPENDENCIES=client-functions.o
+CLIENT_DEPENDENCIES=client-functions.o biblioteca.o
 
 all : server client
 
@@ -34,6 +34,10 @@ client.o : client.c
 client-functions.o : client-functions.c
 	gcc client-functions.c -c $(HEADERS) $(RUN)
 
+biblioteca.o : biblioteca.a
+	gcc -c biblioteca.c biblioteca.h $(RUN)
+	ar rcs biblioteca.a biblioteca.o
+	
 remake : limpa_objs limpa_ficheiros get_ficheiros all
 
 limpa_objs :
@@ -51,6 +55,9 @@ get_ficheiros :
 	cp ../../Servidor/*.c .
 	cp ../../Servidor/*.h .
 	cp ../../Servidor/*.db .
+#Projeto Biblioteca
+	cp ../../Biblioteca/*.c .
+	cp ../../Biblioteca/*.h .
 #Buscar Header file comum
 	cp ../../medit-defaults.h .
 	cp ../../medit-defaults.h .

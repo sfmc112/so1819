@@ -13,12 +13,80 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
 
-/*
- * 
+#include "biblioteca.h"
+
+int fatalErrorMsg(char* descricao, char* funcao);
+
+/**
+ * Função responsável por criar o named pipe.
+ * @param pathname nome do named pipe.
  */
-int main(int argc, char** argv) {
-
-    return (EXIT_SUCCESS);
+int createNamedPipe(char* nomePipe, char* dono) {
+    int pid = getpid();
+    snprintf(nomePipe, PIPE_NAME_MAX, "%s%d", dono, pid);
+    if (mkfifo(nomePipe, S_IRUSR | S_IWUSR) == -1) {
+        if (errno == EEXIST)
+            printf("A fifo <%s> existente sera usada!\n", nomePipe);
+        else {
+            return fatalErrorMsg("Nao consegui criar o pipe", "createNamedPipe()");
+        }
+    }
+    return 0;
 }
 
+/**
+ * Função responsável por efetuar o unlink do named pipe.
+ * @param pathname nome do named pipe.
+ */
+int deleteNamedPipe(char* pathname) {
+    int res = unlink(pathname);
+    if (res == -1) {
+        return fatalErrorMsg("Nao consegui eliminar o pipe", "deleteNamedPipe()");
+    }
+    return 0;
+}
+
+/**
+ * Função responsável por abrir o named pipe.
+ * @param pathname nome do named pipe.
+ * @param mode modo de abertura do pipe (leitura ou escrita).
+ * @return 
+ */
+int openNamedPipe(char* pathname, int mode) {
+    int fd = open(pathname, mode);
+    if (fd == -1) {
+        return fatalErrorMsg("Nao consegui abrir o pipe para escrita", "openNamedPipe()");
+    }
+    return fd;
+}
+
+/**
+ * Função responsável por fechar o named pipe.
+ * @param pathname nome do named pipe.
+ */
+int closeNamedPipe(int fd) {
+    int res = close(fd);
+    if (res == -1) {
+        return fatalErrorMsg("Nao consegui fechar o pipe", "closeNamedPipe()");
+    }
+    return 0;
+}
+
+/**
+ * Função responsável por notificar a função que a chamou com um erro grave.
+ * @param descricao tarefa não executada por causa de um erro
+ * @param funcao nome da função que chamou
+ * @return erro grave (1)
+ */
+int fatalErrorMsg(char* descricao, char* funcao) {
+    fprintf(stderr, "[ERRO]: %s\n", descricao);
+    perror(funcao);
+    return EXIT_FAILURE;
+}

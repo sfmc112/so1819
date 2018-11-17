@@ -71,8 +71,10 @@ void checkArgs(int argc, char** argv) {
             switch (res) {
                 case 'u':
                     cmd = optarg;
-                    if (strlen(cmd) <= 8)
+                    if (strlen(cmd) <= 8){
+                        
                         editor(cmd);
+                    }
                     else
                         loginSession();
                     //TODO Verificar se o utilizador existe do lado do servidor
