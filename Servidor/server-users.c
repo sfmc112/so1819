@@ -16,7 +16,7 @@ int checkUsername(char* user) {
         f = fopen(USERSDEFAULT_DB, "r");
         if (f == NULL)
             exitError("Nao consegui abrir o ficheiro!");
-        while (fscanf(f, " %7[^\n]", buffer) == 1)
+        while (fscanf(f, " %8[^\n]", buffer) == 1)
             if (strcmp(buffer, user) == 0) {
                 fclose(f);
                 return 1;
