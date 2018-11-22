@@ -15,31 +15,35 @@
  * @param sd estrutura das configurações principais do servidor
  */
 void checkArgs(int argc, char** argv, ServerData* sd) {
-    if (argc == 3) {
+    if (argc >= 3 && argc <= 7) {
         char* cmd;
-        char temp[FILENAME_MAX];
         int res;
 
-        while ((res = getopt(argc, argv, "f:")) != -1) {
+        while ((res = getopt(argc, argv, "f:p:n:")) != -1) {
             switch (res) {
                 case 'f':
                     cmd = optarg;
+                    char temp[FILENAME_MAX];
                     strncpy(temp, cmd, FILENAME_MAX);
                     if (ifFileExists(cmd)) {
                         char* token = strtok(temp, ".");
                         token = strtok(NULL, ".");
                         if (strcmp(token, "db") != 0) {
                             printf("A extensão de ficheiro é inválida.\n");
-                            strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
                         } else
                             strncpy(sd->usersDB, cmd, MAX_SIZE_FILENAME);
-                    } else
-                        strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
+                    }
+                    break;
+                case 'p':
+                    cmd = optarg;
+                    strncpy(sd->mainPipe, cmd, PIPE_NAME_MAX);
+                    break;
+                case 'n':
+                    cmd = optarg;
+                    sscanf(cmd, "%d", &(sd->numInteractivePipes));
                     break;
             }
         }
-    } else {
-        strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
     }
 }
 
@@ -115,4 +119,14 @@ void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
             sd->maxUsers = ed->lin;
     } else
         sd->maxUsers = DEFAULT_MAXUSERS;
+}
+
+/**
+ * Inicializa as estruturas do servidor: base de dados dos users, pipe principal e numero de pipes interativos.
+ * @param sd Ponteiro para a estrutura do servidor
+ */
+void initializeServerData(ServerData* sd) {
+    strncpy(sd->mainPipe, MAIN_PIPE_SERVER, PIPE_NAME_MAX);
+    strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
+    sd->numInteractivePipes = NUM_INTERACTIVE_PIPES;
 }

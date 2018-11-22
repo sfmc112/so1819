@@ -14,10 +14,12 @@
 
 #ifdef NO_IDE
 #define PIPE_USER "./Pipes/pipe_user_"
-#define PIPE_SERVER "./Pipes/pipe_server_"
+#define MAIN_PIPE_SERVER "./Pipes/main_pipe_server_"
+#define INTERACTIVE_PIPE_SERVER "./Pipes/int_pipe_server_"
 #else
 #define PIPE_USER "../Pipes/pipe_user_"
-#define PIPE_SERVER "../Pipes/pipe_server_"
+#define MAIN_PIPE_SERVER "../Pipes/main_pipe_server_"
+#define INTERACTIVE_PIPE_SERVER "../Pipes/int_pipe_server_"
 #endif
 
 #ifndef BIBLIOTECA_H
@@ -29,6 +31,7 @@ extern "C" {
 #endif
 
 #define PIPE_NAME_MAX 50
+#define NUM_INTERACTIVE_PIPES 5
 int createNamedPipe(char* nomePipe, char* dono);
 int deleteNamedPipe(char* pathname);
 int openNamedPipe(char* pathname, int mode);
