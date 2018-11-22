@@ -2,11 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <sys/select.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <bits/fcntl-linux.h>
 #include "server-commands.h"
 #include "server-functions.h"
 #include "server-utils.h"
@@ -20,37 +17,6 @@ void configuraSinal(int sinal);
 EditorData eData;
 ServerData sData;
 
-void testeSelect(char* pipeName) {
-    fd_set read_fd_set;
-    FD_ZERO(&read_fd_set);
-    FD_SET(1, &read_fd_set);
-    int fd = openNamedPipe(pipeName, O_RDONLY);
-    FD_SET(fd, &read_fd_set);
-
-    int retval = select(1, &read_fd_set, NULL, NULL);
-
-    switch (retval) {
-        case -1:
-            printf("Select Error.\n");
-            exit(-1);
-            break;
-        case 1:
-            if (FD_ISSET(1), &read_fd_set)
-                readCommands();
-            break;
-        default:
-
-            if (FD_ISSET(fd), &read_fd_set) {
-                int pid;
-                read
-                        char user[MAX_NAME];
-                read(fd, user, MAX_NAME);
-                checkUsername(user);
-            }
-            break;
-    }
-}
-
 int main(int argc, char** argv) {
     char pipeName[PIPE_NAME_MAX];
     createNamedPipe(pipeName, PIPE_SERVER);
@@ -63,8 +29,7 @@ int main(int argc, char** argv) {
 
     initializeMEDITLines(&eData);
 
-    testeSelect(pipeName);
-    //readCommands();
+    readCommands();
 
     return (EXIT_SUCCESS);
 }
