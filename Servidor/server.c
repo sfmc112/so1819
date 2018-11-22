@@ -8,18 +8,19 @@
 #include "server-functions.h"
 #include "server-utils.h"
 #include "server-users.h"
-#include "biblioteca.h"
+
 
 int readCommands();
 void trataSinal(int numSinal);
 void configuraSinal(int sinal);
+void createNamedPipesServer();
 
 EditorData eData;
 ServerData sData;
 
 int main(int argc, char** argv) {
-    char pipeName[PIPE_NAME_MAX];
-    createNamedPipe(pipeName, PIPE_SERVER);
+
+    initializeServerData(&sData);
 
     configuraSinal(SIGUSR1);
 
@@ -28,6 +29,8 @@ int main(int argc, char** argv) {
     getEnvironmentVariables(&eData, &sData);
 
     initializeMEDITLines(&eData);
+
+    createNamedPipesServer();
 
     readCommands();
 
@@ -97,7 +100,6 @@ int readCommands() {
  */
 void trataSinal(int numSinal) {
     if (numSinal == SIGUSR1) {
-
         exitNormal();
     }
 }
@@ -111,4 +113,14 @@ void configuraSinal(int sinal) {
         exitError("Erro a tratar sinal!");
     }
 
+}
+
+void createNamedPipesServer() {
+    char pipeName[PIPE_NAME_MAX];
+    createNamedPipe(pipeName, sData.mainPipe);
+    char temp[PIPE_NAME_MAX];
+    for (int i = 0; i < sData.numInteractivePipes; i++) {
+        snprintf(temp, PIPE_NAME_MAX, "%s_%d_", INTERACTIVE_PIPE_SERVER, i);
+        createNamedPipe(pipeName, temp);
+    }
 }
