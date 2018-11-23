@@ -26,7 +26,9 @@ int fatalErrorMsg(char* descricao, char* funcao);
 
 /**
  * Função responsável por criar o named pipe.
- * @param pathname nome do named pipe.
+ * @param nomePipe string vazia que vai ser atualizada com o nome do pipe
+ * @param dono parte inicial do nome do pipe (sem pid)
+ * @return 0 se correu bem, EXIT_FAILURE caso contrário
  */
 int createNamedPipe(char* nomePipe, char* dono) {
     int pid = getpid();

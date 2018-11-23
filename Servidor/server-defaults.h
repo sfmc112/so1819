@@ -22,5 +22,11 @@ struct _serverdata {
     int numInteractivePipes;
 };
 
+typedef struct _clientdata{
+    int valid;
+    char intServerPipeName[PIPE_NAME_MAX];
+    char myPipeName[PIPE_NAME_MAX];    
+}ClientData;
+
 #endif /* SERVER_DEFAULTS_H */
 

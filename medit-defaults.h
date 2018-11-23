@@ -11,6 +11,8 @@
 #define DEFAULT_TIMEOUT 10
 #define DEFAULT_MAXUSERS 3
 
+//TODO define msg types
+
 //Definição das estruturas de dados
 
 typedef struct _line {
@@ -26,5 +28,14 @@ struct _editordata {
     int timeout; //tempo de inatividade após o qual uma linha é libertada
     Line lines[DEFAULT_MAXLINES]; // As linhas com o texto
 };
+
+typedef struct _servermessage{
+    EditorData ed;
+} ServerMsg;
+
+typedef struct _clientmessage{
+    int msgType; //tipo de mensagem
+    char letra;
+} ClientMsg;
 
 #endif

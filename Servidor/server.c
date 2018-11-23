@@ -3,6 +3,8 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include "server-commands.h"
 #include "server-functions.h"
@@ -18,6 +20,9 @@ void createNamedPipesServer();
 EditorData eData;
 ServerData sData;
 
+
+int fdMP;
+
 int main(int argc, char** argv) {
 
     initializeServerData(&sData);
@@ -32,8 +37,7 @@ int main(int argc, char** argv) {
 
     createNamedPipesServer();
 
-    readCommands();
-
+    
     return (EXIT_SUCCESS);
 }
 
@@ -85,11 +89,9 @@ int readCommands() {
                 break;
             case 7:
                 cmdText();
-
                 break;
             default:
                 puts("Comando invalido!");
-
         }
     }
 }
@@ -112,12 +114,16 @@ void configuraSinal(int sinal) {
     if (signal(sinal, trataSinal) == SIG_ERR) {
         exitError("Erro a tratar sinal!");
     }
-
 }
 
+/**
+ * Função responsável por criar os named pipes do servidor.
+ */
 void createNamedPipesServer() {
     char pipeName[PIPE_NAME_MAX];
     createNamedPipe(pipeName, sData.mainPipe);
+    strncpy(sData.mainPipe, pipeName, PIPE_NAME_MAX);
+
     char temp[PIPE_NAME_MAX];
     for (int i = 0; i < sData.numInteractivePipes; i++) {
         snprintf(temp, PIPE_NAME_MAX, "%s_%d_", INTERACTIVE_PIPE_SERVER, i);
