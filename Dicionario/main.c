@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
@@ -30,23 +31,27 @@ int main(int argc, char** argv) {
     
     pipe(fdpipe);
     
-    if(fork() == 0){
+    pidFilho = fork();
+    
+    if(pidFilho == 0){
+        pidFilho = getpid();
         char mensagem[256];
         int nBytes;
         dup2(fdpipe[0], 0);
-        execlp("aspell", "aspell", "-a", "-d", "pt_PT", "NULL");
-        printf("%d\n", errno);
-        nBytes = read(fdpipe[0], mensagem, 256);
-        mensagem[nBytes] = '\0';
-        printf("%s\n", mensagem);
-        //close(fdpipe[0]);
-
+        execlp("aspell", "aspell", "-a", "-d", "pt_PT", NULL);
     }else{
-        dup2(fdpipe[1], 1);
-       char* msg = "Sou o pai e estou bem";
-        write(fdpipe[1], msg, strlen(msg));
+       dup2(fdpipe[1], 1);
+       char msg[256];
+       while(1){
+           fgets(msg, 256, stdin);
+           if(strncmp(msg, "exit", 4) == 0){
+               break;
+           }
+           write(fdpipe[1], msg, strlen(msg));
+       }
         //close(fdpipe[1]);
-        wait(&estado);
+       kill(pidFilho, SIGINT);
+       wait(&estado);
     }
     
     
