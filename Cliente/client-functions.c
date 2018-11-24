@@ -67,17 +67,19 @@ void checkArgs(int argc, char** argv) {
         char *cmd;
         int res;
 
-        while ((res = getopt(argc, argv, "u:")) != -1) {
+        while ((res = getopt(argc, argv, "u:p:")) != -1) {
             switch (res) {
                 case 'u':
                     cmd = optarg;
-                    if (strlen(cmd) <= 8){
-                        
+                    if (strlen(cmd) <= 8) {
+                        //TODO Verificar se o utilizador existe do lado do servidor
                         editor(cmd);
-                    }
-                    else
+                    } else
                         loginSession();
-                    //TODO Verificar se o utilizador existe do lado do servidor
+                    break;
+                case 'p':
+                    cmd = optarg;
+                    // TODO CRIAR PIPE
                     break;
             }
         }

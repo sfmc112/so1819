@@ -37,7 +37,6 @@ int main(int argc, char** argv) {
 
     createNamedPipesServer();
 
-    
     return (EXIT_SUCCESS);
 }
 

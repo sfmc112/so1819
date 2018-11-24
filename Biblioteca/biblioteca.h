@@ -25,20 +25,14 @@
 #ifndef BIBLIOTECA_H
 #define BIBLIOTECA_H
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define PIPE_NAME_MAX 50
 #define NUM_INTERACTIVE_PIPES 5
+
+
 int createNamedPipe(char* nomePipe, char* dono);
 int deleteNamedPipe(char* pathname);
 int openNamedPipe(char* pathname, int mode);
 int closeNamedPipe(int fd);
-#ifdef __cplusplus
-}
-#endif
 
 
 #endif /* BIBLIOTECA_H */

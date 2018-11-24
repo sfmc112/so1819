@@ -11,6 +11,7 @@
 #define DEFAULT_TIMEOUT 10
 #define DEFAULT_MAXUSERS 3
 
+
 //TODO define msg types
 
 //Definição das estruturas de dados
@@ -29,13 +30,15 @@ struct _editordata {
     Line lines[DEFAULT_MAXLINES]; // As linhas com o texto
 };
 
-typedef struct _servermessage{
+typedef struct _servermessage {
     EditorData ed;
 } ServerMsg;
 
-typedef struct _clientmessage{
+typedef struct _clientmessage {
     int msgType; //tipo de mensagem
     char letra;
+    char intServerPipeName[50];
+    char myPipeName[50];
 } ClientMsg;
 
 #endif

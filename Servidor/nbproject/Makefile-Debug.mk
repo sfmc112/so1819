@@ -56,11 +56,13 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=
+LDLIBSOPTIONS=../Biblioteca/biblioteca.a
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
 	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/servidor
+
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/servidor: ../Biblioteca/biblioteca.a
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/servidor: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
@@ -69,27 +71,27 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/servidor: ${OBJECTFILES}
 ${OBJECTDIR}/server-commands.o: server-commands.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-commands.o server-commands.c
+	$(COMPILE.c) -g -I../Biblioteca -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-commands.o server-commands.c
 
 ${OBJECTDIR}/server-functions.o: server-functions.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-functions.o server-functions.c
+	$(COMPILE.c) -g -I../Biblioteca -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-functions.o server-functions.c
 
 ${OBJECTDIR}/server-users.o: server-users.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-users.o server-users.c
+	$(COMPILE.c) -g -I../Biblioteca -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-users.o server-users.c
 
 ${OBJECTDIR}/server-utils.o: server-utils.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-utils.o server-utils.c
+	$(COMPILE.c) -g -I../Biblioteca -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server-utils.o server-utils.c
 
 ${OBJECTDIR}/server.o: server.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server.o server.c
+	$(COMPILE.c) -g -I../Biblioteca -std=c11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/server.o server.c
 
 # Subprojects
 .build-subprojects:
