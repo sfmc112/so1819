@@ -12,6 +12,8 @@
 typedef struct _serverdata ServerData;
 
 struct _serverdata {
+    //Variável de controlo de execução do servidor
+    int runServer;
     // Nome do ficheiro da base dados de utilizadores
     char usersDB[MAX_SIZE_FILENAME];
     //Número máximo de utilizadores

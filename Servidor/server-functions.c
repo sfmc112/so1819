@@ -126,6 +126,7 @@ void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
  * @param sd Ponteiro para a estrutura do servidor
  */
 void initializeServerData(ServerData* sd) {
+    sd->runServer = 1;
     strncpy(sd->mainPipe, MAIN_PIPE_SERVER, PIPE_NAME_MAX);
     strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
     sd->numInteractivePipes = NUM_INTERACTIVE_PIPES;

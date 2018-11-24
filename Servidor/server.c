@@ -13,28 +13,30 @@
 #include <pthread.h>
 
 
-int readCommands();
+void* readCommands();
 void trataSinal(int numSinal);
 void configuraSinal(int sinal);
 void createNamedPipesServer(CliPipe* pipes);
 void initializeInteractivePipes(int num, CliPipe* pipes);
 
+void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[]);
+void* readFromMainPipe();
+void* readFromClientPipe();
 void joinThreads(pthread_t commands, pthread_t intpipes[]);
 
 EditorData eData;
 ServerData sData;
 
-
 int main(int argc, char** argv) {
 
     initializeServerData(&sData);
     checkArgs(argc, argv, &sData);
-    
+
     CliPipe interactivePipes[sData.numInteractivePipes];
     initializeInteractivePipes(sData.numInteractivePipes, interactivePipes);
-    
+
     configuraSinal(SIGUSR1);
-    
+
     createNamedPipesServer(interactivePipes);
 
     getEnvironmentVariables(&eData, &sData);
@@ -43,16 +45,17 @@ int main(int argc, char** argv) {
 
     //Inicializar threads;
     pthread_t idCommands;
+    pthread_t idMainPipe;
     pthread_t idIntPipes[sData.numInteractivePipes];
-    
-    createServerStartingThreads(&idCommands, idIntPipes);
-    
-    readCommands();
-    
+
+    createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes);
+
+    //readCommands();
+
     //Fechar o programa
-    
+
     joinThreads(idCommands, idIntPipes);
-    
+    printf("O servidor vai terminar!\n");
     //TODO these
     //closePipes(sData, interactivePipes);
     //deletePipes(sData, interactivePipes);
@@ -64,13 +67,13 @@ int main(int argc, char** argv) {
  * Função responsável por ler o comando e interpreta-o.
  * @return 1 se conseguiu e 0 caso contrário
  */
-int readCommands() {
+void* readCommands() {
     char comando[40]; //TODO alterar para define
     const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
     char* token = NULL;
     setbuf(stdout, NULL);
     int i;
-    while (1) {
+    while (sData.runServer) {
         printf("Introduza o comando: ");
         scanf(" %39[^\n]", comando);
         //comando tudo em letras minusculas
@@ -83,7 +86,7 @@ int readCommands() {
             ;
         switch (i) {
             case 0:
-                cmdShutdown();
+                cmdShutdown(&sData);
                 break;
             case 1:
                 cmdSettings(sData, eData);
@@ -146,31 +149,63 @@ void createNamedPipesServer(CliPipe* pipes) {
     char temp[PIPE_NAME_MAX];
     for (int i = 0; i < sData.numInteractivePipes; i++) {
         snprintf(temp, PIPE_NAME_MAX, "%s%d_", INTERACTIVE_PIPE_SERVER, i);
-        if(createNamedPipe(pipeName, temp) == 0)
+        if (createNamedPipe(pipeName, temp) == 0)
             strncpy(pipes[i].pipeName, pipeName, PIPE_NAME_MAX);
     }
 }
 
-void initializeInteractivePipes(int num, CliPipe* pipes){
+void initializeInteractivePipes(int num, CliPipe* pipes) {
     int i;
-    for(i = 0; i < num; i++){
+    for (i = 0; i < num; i++) {
         pipes[i].numUsers = 0;
     }
 }
 
 /*-----------------------THREADS---------------------------------------*/
 
-void createServerStartingThreads(pthread_t commands, pthread_t intpipes[]){
-    
+void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[]) {
+    int err;
+    err = pthread_create((commands), NULL, readCommands, NULL);
+    if (err)
+        printf("\nNão foi possível criar a thread :[%s]", strerror(err));
+    else
+        printf("\n A thread foi criada!\n");
+
+    err = pthread_create((mainpipe), NULL, readFromMainPipe, NULL);
+    if (err)
+        printf("\nNão foi possível criar a thread :[%s]", strerror(err));
+    else
+        printf("\n A thread foi criada!\n");
+
+    int i;
+    for (i = 0; i < sData.numInteractivePipes; i++) {
+        err = pthread_create((&intpipes[i]), NULL, readFromClientPipe, NULL);
+        if (err)
+            printf("\nNão foi possível criar a thread :[%s]", strerror(err));
+        else
+            printf("\n A thread foi criada!\n");
+    }
 }
 
-void joinThreads(pthread_t commands, pthread_t intpipes[]){
+void joinThreads(pthread_t commands, pthread_t intpipes[]) {
     pthread_join(commands, NULL);
     int i;
-    for(i = 0; i < sData.numInteractivePipes; i++)
+    for (i = 0; i < sData.numInteractivePipes; i++)
         pthread_join(intpipes[i], NULL);
 }
 
-void* receiveNewUsers(){
-    
+void* readFromMainPipe() {
+    //TODO por acabar
+    while (sData.runServer) {
+        printf("Fake read from server pipe...");
+        sleep(10);
+    }
+}
+
+void* readFromClientPipe() {
+    //TODO por acabar
+    while (sData.runServer) {
+        printf("Fake read from client pipe...");
+        sleep(8);
+    }
 }
