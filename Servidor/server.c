@@ -3,6 +3,8 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include "server-commands.h"
 #include "server-functions.h"
@@ -22,7 +24,9 @@ void joinThreads(pthread_t commands, pthread_t intpipes[]);
 EditorData eData;
 ServerData sData;
 
-int main(int argc, char** argv) {    
+
+int main(int argc, char** argv) {
+
     initializeServerData(&sData);
     checkArgs(argc, argv, &sData);
     
@@ -41,12 +45,9 @@ int main(int argc, char** argv) {
     pthread_t idCommands;
     pthread_t idIntPipes[sData.numInteractivePipes];
     
-
     readCommands();
     
-    
     joinThreads(idCommands, idIntPipes);
-    
     
     //TODO these
     //closePipes(sData, interactivePipes);
@@ -103,11 +104,9 @@ int readCommands() {
                 break;
             case 7:
                 cmdText();
-
                 break;
             default:
                 puts("Comando invalido!");
-
         }
     }
 }
@@ -130,14 +129,16 @@ void configuraSinal(int sinal) {
     if (signal(sinal, trataSinal) == SIG_ERR) {
         exitError("Erro a tratar sinal!");
     }
-
 }
 
+/**
+ * Função responsável por criar os named pipes do servidor.
+ */
 void createNamedPipesServer(CliPipe* pipes) {
     char pipeName[PIPE_NAME_MAX];
     createNamedPipe(pipeName, sData.mainPipe);
     strncpy(sData.mainPipe, pipeName, PIPE_NAME_MAX);
-    
+
     char temp[PIPE_NAME_MAX];
     for (int i = 0; i < sData.numInteractivePipes; i++) {
         snprintf(temp, PIPE_NAME_MAX, "%s%d_", INTERACTIVE_PIPE_SERVER, i);

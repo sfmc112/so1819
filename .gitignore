@@ -63,3 +63,5 @@ dkms.conf
 /Biblioteca/dist/
 /Dicionario/dist/
 /Dicionario/build/
+/Teste/build/
+/Teste/dist/
