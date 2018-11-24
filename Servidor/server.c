@@ -45,7 +45,11 @@ int main(int argc, char** argv) {
     pthread_t idCommands;
     pthread_t idIntPipes[sData.numInteractivePipes];
     
+    createServerStartingThreads(&idCommands, idIntPipes);
+    
     readCommands();
+    
+    //Fechar o programa
     
     joinThreads(idCommands, idIntPipes);
     
@@ -155,6 +159,10 @@ void initializeInteractivePipes(int num, CliPipe* pipes){
 }
 
 /*-----------------------THREADS---------------------------------------*/
+
+void createServerStartingThreads(pthread_t commands, pthread_t intpipes[]){
+    
+}
 
 void joinThreads(pthread_t commands, pthread_t intpipes[]){
     pthread_join(commands, NULL);
