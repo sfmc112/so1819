@@ -52,7 +52,7 @@ void checkArgs(int argc, char** argv, ServerData* sd) {
  * as variáveis de linha/coluna já foram atríbuídas assim como o nome do ficheiro
  * da base de dados dos utilizadores
  */
-void initializeMEDITLines(EditorData* ed) {
+void resetMEDITLines(EditorData* ed) {
     //Inicializar linhas
     int i, j;
 

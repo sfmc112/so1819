@@ -6,6 +6,8 @@
 #define VAR_AMBIENTE_TIMEOUT "MEDIT_TIMEOUT"
 #define VAR_AMBIENTE_USERS "MEDIT_MAXUSERS"
 
+#define MAX_FILE_NAME 50
+
 #define DEFAULT_MAXLINES 15
 #define DEFAULT_MAXCOLUMNS 45
 #define DEFAULT_TIMEOUT 10
@@ -21,6 +23,7 @@ typedef struct _line {
 typedef struct _editordata EditorData;
 
 struct _editordata {
+    char fileName[MAX_FILE_NAME];
     int lin; // Número de linhas que o editor possui
     int col; // Comprimento de uma linha de texto
     int timeout; //tempo de inatividade após o qual uma linha é libertada

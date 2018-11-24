@@ -8,31 +8,49 @@
 #include "server-functions.h"
 #include "server-utils.h"
 #include "server-users.h"
+#include <pthread.h>
 
 
 int readCommands();
 void trataSinal(int numSinal);
 void configuraSinal(int sinal);
-void createNamedPipesServer();
+void createNamedPipesServer(CliPipe* pipes);
+void initializeInteractivePipes(int num, CliPipe* pipes);
+
+void joinThreads(pthread_t commands, pthread_t intpipes[]);
 
 EditorData eData;
 ServerData sData;
 
-int main(int argc, char** argv) {
-
+int main(int argc, char** argv) {    
     initializeServerData(&sData);
-
-    configuraSinal(SIGUSR1);
-
     checkArgs(argc, argv, &sData);
+    
+    CliPipe interactivePipes[sData.numInteractivePipes];
+    initializeInteractivePipes(sData.numInteractivePipes, interactivePipes);
+    
+    configuraSinal(SIGUSR1);
+    
+    createNamedPipesServer(interactivePipes);
 
     getEnvironmentVariables(&eData, &sData);
 
-    initializeMEDITLines(&eData);
+    resetMEDITLines(&eData);
 
-    createNamedPipesServer();
+    //Inicializar threads;
+    pthread_t idCommands;
+    pthread_t idIntPipes[sData.numInteractivePipes];
+    
 
     readCommands();
+    
+    
+    joinThreads(idCommands, idIntPipes);
+    
+    
+    //TODO these
+    //closePipes(sData, interactivePipes);
+    //deletePipes(sData, interactivePipes);
 
     return (EXIT_SUCCESS);
 }
@@ -106,7 +124,7 @@ void trataSinal(int numSinal) {
 
 /**
  * Função responsável por redefinir o comportamento de sinal.
- * @param sinal
+ * @param sinal o sinal que o programa recebeu
  */
 void configuraSinal(int sinal) {
     if (signal(sinal, trataSinal) == SIG_ERR) {
@@ -115,12 +133,35 @@ void configuraSinal(int sinal) {
 
 }
 
-void createNamedPipesServer() {
+void createNamedPipesServer(CliPipe* pipes) {
     char pipeName[PIPE_NAME_MAX];
     createNamedPipe(pipeName, sData.mainPipe);
+    strncpy(sData.mainPipe, pipeName, PIPE_NAME_MAX);
+    
     char temp[PIPE_NAME_MAX];
     for (int i = 0; i < sData.numInteractivePipes; i++) {
-        snprintf(temp, PIPE_NAME_MAX, "%s_%d_", INTERACTIVE_PIPE_SERVER, i);
-        createNamedPipe(pipeName, temp);
+        snprintf(temp, PIPE_NAME_MAX, "%s%d_", INTERACTIVE_PIPE_SERVER, i);
+        if(createNamedPipe(pipeName, temp) == 0)
+            strncpy(pipes[i].pipeName, pipeName, PIPE_NAME_MAX);
     }
+}
+
+void initializeInteractivePipes(int num, CliPipe* pipes){
+    int i;
+    for(i = 0; i < num; i++){
+        pipes[i].numUsers = 0;
+    }
+}
+
+/*-----------------------THREADS---------------------------------------*/
+
+void joinThreads(pthread_t commands, pthread_t intpipes[]){
+    pthread_join(commands, NULL);
+    int i;
+    for(i = 0; i < sData.numInteractivePipes; i++)
+        pthread_join(intpipes[i], NULL);
+}
+
+void* receiveNewUsers(){
+    
 }

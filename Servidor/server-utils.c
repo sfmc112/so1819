@@ -18,7 +18,7 @@ void exitError(char* mensagem) {
 }
 
 void exitNormal(){
-    //Fazer outras coisas
+    //TODO Fazer outras coisas
     exit(0);
 }
 

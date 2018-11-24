@@ -22,5 +22,12 @@ struct _serverdata {
     int numInteractivePipes;
 };
 
+typedef struct _intpipe{
+    //Número de utilizadores ligados a este pipe
+    int numUsers;
+    //Nome do pipe de interação
+    char pipeName[PIPE_NAME_MAX];
+}CliPipe;
+
 #endif /* SERVER_DEFAULTS_H */
 

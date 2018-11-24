@@ -17,6 +17,6 @@
 
 void checkArgs(int argc, char** argv, ServerData* sd);
 void getEnvironmentVariables(EditorData* ed, ServerData* sd);
-void initializeMEDITLines(EditorData* ed);
+void resetMEDITLines(EditorData* ed);
 void initializeServerData(ServerData* sd);
 #endif /* SERVER_FUNCTIONS_H */
