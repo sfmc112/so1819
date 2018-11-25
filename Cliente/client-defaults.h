@@ -6,6 +6,6 @@
 #else
     #include "../medit-defaults.h"
 #endif
-
+#include "biblioteca.h"
 #endif /* CLIENT_DEFAULTS_H */
 
