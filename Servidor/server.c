@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     //Fechar o programa
 
     joinThreads(idCommands, idMainPipe, idIntPipes);
-    
+
     //Fechar o programa
     printf("O servidor vai terminar!\n");
     //TODO these
@@ -211,9 +211,17 @@ void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
 
 void* readFromMainPipe() {
     int nBytes;
-    
+    LoginMsg login;
+    ServerMsg msg;
+
     while (sData.runServer) {
-        nbytes = read(fdMainPipe, 
+        nBytes = read(fdMainPipe, &login, sizeof (LoginMsg));
+        if (nBytes == sizeof (LoginMsg)) {
+            if (!checkUsername(login.username) || checkUserOnline(login.username, sData)) {
+                msg.code = LOGIN_FAILURE;
+                
+            }
+        }
     }
 }
 

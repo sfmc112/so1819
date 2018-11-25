@@ -18,6 +18,7 @@
 #define MAX_NAME 8
 
 int checkUsername(char* user);
+int checkUserOnline(char* user, ServerData sd);
 int addUsername();
 
 #endif /* USERS_H */

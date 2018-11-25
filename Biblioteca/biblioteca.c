@@ -21,6 +21,7 @@
 #include <errno.h>
 
 #include "biblioteca.h"
+#include "../medit-defaults.h"
 
 int fatalErrorMsg(char* descricao, char* funcao);
 
@@ -102,6 +103,10 @@ int closeNamedPipe(int fd) {
         return fatalErrorMsg("Nao consegui fechar o pipe", "closeNamedPipe()");
     }
     return 0;
+}
+
+void writeServerMsg(int fd, ServerMsg msg){
+    write(fd, &msg, sizeof(msg));
 }
 
 /**

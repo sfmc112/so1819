@@ -11,7 +11,7 @@
 
 typedef struct _clientdata {
     int valid;
-    char* username;
+    char username[9];
     int fdIntPipe;
     int fdPipeClient;
 } ClientData;
