@@ -16,9 +16,9 @@
 void* readCommands();
 void trataSinal(int numSinal);
 void configuraSinal(int sinal);
-void createNamedPipesServer(CliPipe* pipes);
-void openNamedPipesServer(CliPipe* pipes);
-void initializeInteractivePipes(CliPipe* pipes);
+void createNamedPipesServer(InteractionPipe* pipes);
+void openNamedPipesServer(InteractionPipe* pipes);
+void initializeInteractivePipes(InteractionPipe* pipes);
 
 void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[]);
 void* readFromMainPipe();
@@ -31,14 +31,16 @@ ServerData sData;
 int fdMainPipe;
 
 int main(int argc, char** argv) {
+    if (verifySingleInstance() < 0)
+        exitError("Já existe uma instância do servidor em execução!");
 
     initializeServerData(&sData);
     checkArgs(argc, argv, &sData);
 
-    CliPipe interactivePipes[sData.numInteractivePipes];
+    InteractionPipe interactivePipes[sData.numInteractivePipes];
     initializeInteractivePipes(interactivePipes);
-    openNamedPipesServer(interactivePipes)
-    
+    openNamedPipesServer(interactivePipes);
+
     configuraSinal(SIGUSR1);
 
     createNamedPipesServer(interactivePipes);
@@ -144,7 +146,7 @@ void configuraSinal(int sinal) {
 /**
  * Função responsável por criar os named pipes do servidor.
  */
-void createNamedPipesServer(CliPipe* pipes) {
+void createNamedPipesServer(InteractionPipe* pipes) {
     char pipeName[PIPE_NAME_MAX];
     createServerNamedPipe(sData.mainPipe);
 
@@ -156,7 +158,7 @@ void createNamedPipesServer(CliPipe* pipes) {
     }
 }
 
-void openNamedPipesServer(CliPipe* pipes) {
+void openNamedPipesServer(InteractionPipe* pipes) {
     fdMainPipe = openNamedPipe(sData.mainPipe, O_RDWR);
 
     for (int i = 0; i < sData.numInteractivePipes; i++) {
@@ -164,7 +166,7 @@ void openNamedPipesServer(CliPipe* pipes) {
     }
 }
 
-void initializeInteractivePipes(CliPipe* pipes) {
+void initializeInteractivePipes(InteractionPipe* pipes) {
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++) {
         pipes[i].numUsers = 0;

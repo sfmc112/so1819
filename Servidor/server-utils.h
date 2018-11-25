@@ -6,4 +6,5 @@ void toLower(char* buffer);
 void toUpper(char* buffer);
 int ifFileExists(char* nomeFicheiro);
 //char* getSignalName(int signal, char* str);
+int verifySingleInstance();
 #endif /* UTILS_H */
