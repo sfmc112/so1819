@@ -49,7 +49,13 @@ void trataSinal(int numSinal) {
 
 void sendLoginToServer(char* login) {
     fdSv = openNamedPipe(MAIN_PIPE_SERVER, O_WRONLY);
-    int res = write(fdSv, login, 9);
+
+    if (fdSv == -1) {
+        fprintf(stderr, "[ERRO]: O pipe principal do servidor, nao esta disponivel!\n");
+        return;
+    }
+
+    int res = write(fdSv, login, strlen(user));
 
     if (res == -1) {
         fprintf(stderr, "[ERRO]: Nao foi enviado o login para o servidor!\n");
@@ -67,7 +73,7 @@ void sendLoginToServer(char* login) {
         return; // TODO TEM QUE SER ALTERADO
     }
 
-    if (msg.code == 1) {
+    if (msg.code == LOGIN_FAILURE) {
         // Username incorreto
         closeNamedPipe(fdMyPipe);
         closeNamedPipe(fdSv);
@@ -76,5 +82,4 @@ void sendLoginToServer(char* login) {
         // Login Efetuado com sucesso
         editor(user);
     }
-    // TODO LER PIPES
 }
