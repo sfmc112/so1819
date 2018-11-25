@@ -40,9 +40,28 @@ int createNamedPipe(char* nomePipe, char* dono) {
             return fatalErrorMsg("Nao consegui criar o pipe", "createNamedPipe()");
         }
     }
+    
+    printf("O pipe <%s> foi criado com sucesso!", nomePipe);
+    
     return 0;
 }
 
+/**
+ * Função responsável por criar o named pipe do servidor.
+ * @return 0 se correu bem, EXIT_FAILURE caso contrário
+ */
+int createServerNamedPipe(char* pipeName) {
+    if (mkfifo(pipeName, S_IRUSR | S_IWUSR) == -1) {
+        if (errno == EEXIST)
+            printf("A fifo <%s> existente sera usada!\n", pipeName);
+        else {
+            return fatalErrorMsg("Nao consegui criar o pipe", "createNamedPipe()");
+        }
+    }
+    printf("O pipe do servidor foi criado com sucesso!");
+            
+    return 0;
+}
 /**
  * Função responsável por efetuar o unlink do named pipe.
  * @param pathname nome do named pipe.
@@ -66,6 +85,9 @@ int openNamedPipe(char* pathname, int mode) {
     if (fd == -1) {
         return fatalErrorMsg("Nao consegui abrir o pipe para escrita", "openNamedPipe()");
     }
+    
+    printf("O pipe <%s> foi criado com sucesso!", pathname);
+    
     return fd;
 }
 

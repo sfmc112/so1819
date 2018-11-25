@@ -30,6 +30,8 @@ typedef struct _intpipe{
     int numUsers;
     //Nome do pipe de interação
     char pipeName[PIPE_NAME_MAX];
+    //Descritor do pipe interactivo
+    int fd;
 }CliPipe;
 
 typedef struct _clientdata {
