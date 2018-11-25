@@ -1,18 +1,80 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "biblioteca.h"
 #include "client-functions.h"
 
-char mainPipe[PIPE_NAME_MAX];
+void sendLoginToServer(char* login);
+
+
+int fdMyPipe, fdSv;
 char user[9];
+char mainPipe[PIPE_NAME_MAX];
 
 int main(int argc, char** argv) {
-    char pipe[PIPE_NAME_MAX];
+    char tempPipe[PIPE_NAME_MAX];
+
     strncpy(mainPipe, PIPE_USER, PIPE_NAME_MAX);
+
+    //configuraSinal(SIGUSR2);
+
     checkArgs(argc, argv, mainPipe, user);
-    createNamedPipe(pipe, mainPipe);
-    strncpy(mainPipe, pipe, PIPE_NAME_MAX);
+
+    createNamedPipe(tempPipe, mainPipe);
+
+    strncpy(mainPipe, tempPipe, PIPE_NAME_MAX);
+
     sendLoginToServer(user);
+
     return (EXIT_SUCCESS);
+}
+
+/**
+ * Função responsável por executar o comportamento de numSinal.
+ * @param numSinal Código do sinal.
+ */
+
+/*
+void trataSinal(int numSinal) {
+    if (numSinal == SIGUSR2) {
+        closeNamedPipe(fdMyPipe);
+        closeNamedPipe(fdSv);
+        deleteNamedPipe(mainPipe);
+        exit(-1); // TODO ALTERAR
+    }
+}
+ */
+
+void sendLoginToServer(char* login) {
+    fdSv = openNamedPipe(MAIN_PIPE_SERVER, O_WRONLY);
+    int res = write(fdSv, login, 9);
+
+    if (res == -1) {
+        fprintf(stderr, "[ERRO]: Nao foi enviado o login para o servidor!\n");
+        return; // TODO TEM QUE SER ALTERADO
+    }
+
+    fdMyPipe = openNamedPipe(mainPipe, O_RDONLY);
+
+    ServerMsg msg;
+
+    res = read(fdMyPipe, &msg, sizeof (ServerMsg));
+
+    if (res == -1) {
+        fprintf(stderr, "[ERRO]: Nao foi possivel ler a resposta do servidor!\n");
+        return; // TODO TEM QUE SER ALTERADO
+    }
+
+    if (msg.code == 1) {
+        // Username incorreto
+        closeNamedPipe(fdMyPipe);
+        closeNamedPipe(fdSv);
+        deleteNamedPipe(mainPipe);
+    } else {
+        // Login Efetuado com sucesso
+        editor(user);
+    }
+    // TODO LER PIPES
 }

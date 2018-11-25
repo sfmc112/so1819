@@ -13,8 +13,21 @@
 #define DEFAULT_TIMEOUT 10
 #define DEFAULT_MAXUSERS 3
 
+/* Code */
+#define LOGIN_SUCCESS 0
+#define LOGIN_FAILURE 1
+#define SERVER_SHUTDOWN 2
+#define EDITOR_UPDATE 3
 
-//TODO define msg types
+/* MSG TYPES */
+#define MOVE_UP 100
+#define MOVE_DOWN 101
+#define MOVE_LEFT 102
+#define MOVE_RIGHT 103
+#define K_ENTER 104
+#define K_ESC 105
+#define K_DEL 106
+#define K_BACKSPACE 107
 
 //Definição das estruturas de dados
 
@@ -35,13 +48,14 @@ struct _editordata {
 
 typedef struct _servermessage {
     EditorData ed;
+    int code; // 0 caso nao haja erro, 1 caso contrário
+    char* intPipeName;
 } ServerMsg;
 
 typedef struct _clientmessage {
     int msgType; //tipo de mensagem
     char letra;
-    char intServerPipeName[50];
-    char myPipeName[50];
+    char username[9];
 } ClientMsg;
 
 #endif
