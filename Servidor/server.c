@@ -208,7 +208,7 @@ void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
 void* readFromMainPipe() {
     //TODO por acabar
     while (sData.runServer) {
-        printf("Fake read from server pipe...");
+        printf("Fake read from server pipe...\n");
         sleep(10);
     }
 }
@@ -216,7 +216,7 @@ void* readFromMainPipe() {
 void* readFromClientPipe() {
     //TODO por acabar
     while (sData.runServer) {
-        printf("Fake read from client pipe...");
+        printf("Fake read from client pipe...\n");
         sleep(8);
     }
 }

@@ -4,23 +4,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/types.h>
 #include "client-defaults.h"
-// OLD VERSION
-/*
-#define X_INDEX 5
-
-void resetLine(char *text);
-void preencheLinhas(int rows);
-void moveUp(int *posy);
-void moveDown(int *posy, int nrow);
-void moveLeft(int *posx, int posy);
-void moveRight(int *posx, int ncol);
-void changeCursorPosition(int posx, int oposx, int posy, int oposy, char cursor, char tempChar, int ncol, int nav, int apaga);
-void backSpaceKey(int posy, int posx, int ncol);
-void deleteKey(int posy, int posx, int ncol);
-int moveAllToTheRight(int posy, int posx, int ncol);
-void getTextoDaLinha(char* texto, int linha, int maxX);
- */
 
 #define TITLE "MEDIT EDITOR--------------------filename.xpto-----------------------------------"
 #define WIN_EDITOR_MAX_X 45
@@ -62,41 +49,36 @@ Line lines[WIN_EDITOR_MAX_Y];
  * @param argc quantidade de argumentos
  * @param argv array com os argumentos
  */
-void checkArgs(int argc, char** argv) {
-    if (argc == 3) {
+void checkArgs(int argc, char** argv, char* pipeName, char* user) {
+    int flag = 1;
+    if (argc >= 3 && argc <= 5) {
         char *cmd;
         int res;
 
         while ((res = getopt(argc, argv, "u:p:")) != -1) {
             switch (res) {
                 case 'u':
+                    flag = 0;
                     cmd = optarg;
-                    if (strlen(cmd) <= 8) {
-                        //TODO Verificar se o utilizador existe do lado do servidor
-                        editor(cmd);
-                    } else
-                        loginSession();
+                    strncpy(user, cmd, 8);
                     break;
                 case 'p':
                     cmd = optarg;
-                    // TODO CRIAR PIPE
+                    strncpy(pipeName, cmd, PIPE_NAME_MAX);
                     break;
             }
         }
-    } else {
-        loginSession();
     }
+    if (flag)
+        loginSession(user);
 }
 
 /**
  * Função que pede o nome de utilizador e pede para que o servidor verifque se existe, fazendo assim o login ou não.
  */
-void loginSession() {
-    char user[9];
+void loginSession(char* user) {
     printf("Insira o nome de utilizador: ");
     scanf(" %8s", user);
-    //TODO Verificar se o utilizador existe do lado do servidor
-    editor(user);
 }
 
 /**
@@ -426,4 +408,42 @@ void deleteKey(char* linha, int x, int y) {
     moveAllToTheLeft(linha, x);
     resetLine(editorWin, y, WIN_EDITOR_MAX_X);
     writeTextLine(linha, y);
+}
+
+int sendLoginToServer(char* login) {
+    int fdSv = openNamedPipe(MAIN_PIPE_SERVER, O_WRONLY);
+    int res = write(fdSv, login, 9);
+
+    if (res == -1) {
+        fprintf(stderr, "[ERRO]: Nao foi enviado o login para o servidor!\n");
+        return 1;
+    }
+
+    int fdMyPipe = openNamedPipe(PIPE_USER, O_RDONLY);
+
+    configuraSinal(SIGUSR2);
+
+    // TODO LER PIPES
+    return 0;
+}
+
+/**
+ * Função responsável por executar o comportamento de numSinal.
+ * @param numSinal Código do sinal.
+ */
+void trataSinal(int numSinal) {
+    if (numSinal == SIGUSR2) {
+        //TODO FECHAR PIPES
+        //TODO ELIMINAR O MEU
+    }
+}
+
+/**
+ * Função responsável por redefinir o comportamento de sinal.
+ * @param sinal o sinal que o programa recebeu
+ */
+void configuraSinal(int sinal) {
+    if (signal(sinal, trataSinal) == SIG_ERR) {
+        perror("Erro a tratar sinal!");
+    }
 }
