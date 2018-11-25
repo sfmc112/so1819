@@ -28,7 +28,7 @@ typedef struct _serverdata {
     // Número de named pipes interativos (POOL)
     int numInteractivePipes;
     // Clientes
-    ClientData clients[30];
+    ClientData clients[DEFAULT_MAXUSERS];
 } ServerData;
 
 typedef struct _intpipe {
