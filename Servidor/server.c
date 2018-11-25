@@ -60,10 +60,12 @@ int main(int argc, char** argv) {
     //Fechar o programa
 
     joinThreads(idCommands, idMainPipe, idIntPipes);
+    
+    //Fechar o programa
     printf("O servidor vai terminar!\n");
     //TODO these
-    //closePipes(sData, interactivePipes);
-    //deletePipes(sData, interactivePipes);
+    //closePipes(interactivePipes);
+    //deletePipes(interactivePipes);
 
     return (EXIT_SUCCESS);
 }
@@ -208,10 +210,10 @@ void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
 }
 
 void* readFromMainPipe() {
-    //TODO por acabar
+    int nBytes;
+    
     while (sData.runServer) {
-        printf("Fake read from server pipe...\n");
-        sleep(10);
+        nbytes = read(fdMainPipe, 
     }
 }
 

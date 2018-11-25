@@ -3,7 +3,6 @@
 
 #include "Biblioteca/biblioteca.h"
 
-
 #define VAR_AMBIENTE_LINHAS "MEDIT_MAXLINES"
 #define VAR_AMBIENTE_COLUNAS "MEDIT_MAXCOLUMNS"
 #define VAR_AMBIENTE_TIMEOUT "MEDIT_TIMEOUT"
@@ -14,7 +13,7 @@
 #define DEFAULT_MAXLINES 15
 #define DEFAULT_MAXCOLUMNS 45
 #define DEFAULT_TIMEOUT 10
-#define DEFAULT_MAXUSERS 3
+#define DEFAULT_MAXUSERS 15
 
 /* Code */
 #define LOGIN_SUCCESS 0
@@ -31,6 +30,7 @@
 #define K_ESC 105
 #define K_DEL 106
 #define K_BACKSPACE 107
+#define K_CHAR 108
 
 //Definição das estruturas de dados
 
@@ -42,7 +42,7 @@ typedef struct _line {
 typedef struct _editordata EditorData;
 
 struct _editordata {
-    char fileName[MAX_FILE_NAME];
+    char fileName[MAX_FILE_NAME]; //nome do ficheiro de texto
     int lin; // Número de linhas que o editor possui
     int col; // Comprimento de uma linha de texto
     int timeout; //tempo de inatividade após o qual uma linha é libertada
@@ -52,7 +52,7 @@ struct _editordata {
 typedef struct _servermessage {
     EditorData ed;
     int code; // 0 caso nao haja erro, 1 caso contrário
-    char* intPipeName;
+    char intPipeName[PIPE_NAME_MAX];
 } ServerMsg;
 
 typedef struct _clientmessage {
