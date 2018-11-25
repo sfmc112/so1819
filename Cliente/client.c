@@ -14,6 +14,13 @@ char user[9];
 char mainPipe[PIPE_NAME_MAX];
 
 int main(int argc, char** argv) {
+    fdSv = openNamedPipe(MAIN_PIPE_SERVER, O_WRONLY);
+
+    if (fdSv == -1) {
+        fprintf(stderr, "[ERRO]: O pipe principal do servidor, nao esta disponivel!\n");
+        return EXIT_FAILURE;
+    }
+
     char tempPipe[PIPE_NAME_MAX];
 
     strncpy(mainPipe, PIPE_USER, PIPE_NAME_MAX);
@@ -28,6 +35,9 @@ int main(int argc, char** argv) {
 
     sendLoginToServer(user);
 
+    closeNamedPipe(fdMyPipe);
+    closeNamedPipe(fdSv);
+    deleteNamedPipe(mainPipe);
     return (EXIT_SUCCESS);
 }
 
@@ -47,14 +57,11 @@ void trataSinal(int numSinal) {
 }
  */
 
+/**
+ * Função responsável por enviar o username para o servidor. Fazendo com que o mesmo seja validado.
+ * @param login username do cliente
+ */
 void sendLoginToServer(char* login) {
-    fdSv = openNamedPipe(MAIN_PIPE_SERVER, O_WRONLY);
-
-    if (fdSv == -1) {
-        fprintf(stderr, "[ERRO]: O pipe principal do servidor, nao esta disponivel!\n");
-        return;
-    }
-
     int res = write(fdSv, login, strlen(user));
 
     if (res == -1) {
@@ -66,7 +73,7 @@ void sendLoginToServer(char* login) {
 
     ServerMsg msg;
 
-    res = read(fdMyPipe, &msg, sizeof (ServerMsg));
+    res = read(fdMyPipe, &msg, sizeof (msg));
 
     if (res == -1) {
         fprintf(stderr, "[ERRO]: Nao foi possivel ler a resposta do servidor!\n");
