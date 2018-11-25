@@ -17,15 +17,18 @@ void* readCommands();
 void trataSinal(int numSinal);
 void configuraSinal(int sinal);
 void createNamedPipesServer(CliPipe* pipes);
-void initializeInteractivePipes(int num, CliPipe* pipes);
+void openNamedPipesServer(CliPipe* pipes);
+void initializeInteractivePipes(CliPipe* pipes);
 
 void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[]);
 void* readFromMainPipe();
 void* readFromClientPipe();
-void joinThreads(pthread_t commands, pthread_t intpipes[]);
+void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]);
 
 EditorData eData;
 ServerData sData;
+
+int fdMainPipe;
 
 int main(int argc, char** argv) {
 
@@ -33,11 +36,13 @@ int main(int argc, char** argv) {
     checkArgs(argc, argv, &sData);
 
     CliPipe interactivePipes[sData.numInteractivePipes];
-    initializeInteractivePipes(sData.numInteractivePipes, interactivePipes);
-
+    initializeInteractivePipes(interactivePipes);
+    openNamedPipesServer(interactivePipes)
+    
     configuraSinal(SIGUSR1);
 
     createNamedPipesServer(interactivePipes);
+    openNamedPipesServer(interactivePipes);
 
     getEnvironmentVariables(&eData, &sData);
 
@@ -50,11 +55,9 @@ int main(int argc, char** argv) {
 
     createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes);
 
-    //readCommands();
-
     //Fechar o programa
 
-    joinThreads(idCommands, idIntPipes);
+    joinThreads(idCommands, idMainPipe, idIntPipes);
     printf("O servidor vai terminar!\n");
     //TODO these
     //closePipes(sData, interactivePipes);
@@ -143,8 +146,7 @@ void configuraSinal(int sinal) {
  */
 void createNamedPipesServer(CliPipe* pipes) {
     char pipeName[PIPE_NAME_MAX];
-    createNamedPipe(pipeName, sData.mainPipe);
-    strncpy(sData.mainPipe, pipeName, PIPE_NAME_MAX);
+    createServerNamedPipe(sData.mainPipe);
 
     char temp[PIPE_NAME_MAX];
     for (int i = 0; i < sData.numInteractivePipes; i++) {
@@ -154,9 +156,17 @@ void createNamedPipesServer(CliPipe* pipes) {
     }
 }
 
-void initializeInteractivePipes(int num, CliPipe* pipes) {
+void openNamedPipesServer(CliPipe* pipes) {
+    fdMainPipe = openNamedPipe(sData.mainPipe, O_RDWR);
+
+    for (int i = 0; i < sData.numInteractivePipes; i++) {
+        pipes[i].fd = openNamedPipe(pipes[i].pipeName, O_RDWR);
+    }
+}
+
+void initializeInteractivePipes(CliPipe* pipes) {
     int i;
-    for (i = 0; i < num; i++) {
+    for (i = 0; i < sData.numInteractivePipes; i++) {
         pipes[i].numUsers = 0;
     }
 }
@@ -187,8 +197,9 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
     }
 }
 
-void joinThreads(pthread_t commands, pthread_t intpipes[]) {
+void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
     pthread_join(commands, NULL);
+    pthread_join(mainpipe, NULL);
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++)
         pthread_join(intpipes[i], NULL);

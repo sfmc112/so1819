@@ -14,11 +14,11 @@
 
 #ifdef NO_IDE
 #define PIPE_USER "./Pipes/pipe_user_"
-#define MAIN_PIPE_SERVER "./Pipes/main_pipe_server_"
+#define MAIN_PIPE_SERVER "./Pipes/main_pipe_server"
 #define INTERACTIVE_PIPE_SERVER "./Pipes/int_pipe_server_"
 #else
 #define PIPE_USER "../Pipes/pipe_user_"
-#define MAIN_PIPE_SERVER "../Pipes/main_pipe_server_"
+#define MAIN_PIPE_SERVER "../Pipes/main_pipe_server"
 #define INTERACTIVE_PIPE_SERVER "../Pipes/int_pipe_server_"
 #endif
 
@@ -30,6 +30,7 @@
 
 
 int createNamedPipe(char* nomePipe, char* dono);
+int createServerNamedPipe();
 int deleteNamedPipe(char* pathname);
 int openNamedPipe(char* pathname, int mode);
 int closeNamedPipe(int fd);
