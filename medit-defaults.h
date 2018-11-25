@@ -1,6 +1,9 @@
 #ifndef MEDIT_DEFAULTS_H
 #define MEDIT_DEFAULTS_H
 
+#include "Biblioteca/biblioteca.h"
+
+
 #define VAR_AMBIENTE_LINHAS "MEDIT_MAXLINES"
 #define VAR_AMBIENTE_COLUNAS "MEDIT_MAXCOLUMNS"
 #define VAR_AMBIENTE_TIMEOUT "MEDIT_TIMEOUT"
@@ -57,5 +60,10 @@ typedef struct _clientmessage {
     char letra;
     char username[9];
 } ClientMsg;
+
+typedef struct _loginmsg {
+    char username[9];
+    char nomePipeCliente[PIPE_NAME_MAX];
+} LoginMsg;
 
 #endif

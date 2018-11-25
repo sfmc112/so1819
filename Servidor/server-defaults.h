@@ -9,9 +9,14 @@
 #include "biblioteca.h"
 #define MAX_SIZE_FILENAME 50
 
-typedef struct _serverdata ServerData;
+typedef struct _clientdata {
+    int valid;
+    char* username;
+    int fdIntPipe;
+    int fdPipeClient;
+} ClientData;
 
-struct _serverdata {
+typedef struct _serverdata {
     //Variável de controlo de execução do servidor
     int runServer;
     // Nome do ficheiro da base dados de utilizadores
@@ -22,7 +27,9 @@ struct _serverdata {
     char mainPipe[PIPE_NAME_MAX];
     // Número de named pipes interativos (POOL)
     int numInteractivePipes;
-};
+    // Clientes
+    ClientData clients[30];
+} ServerData;
 
 typedef struct _intpipe {
     //Número de utilizadores ligados a este pipe
@@ -32,11 +39,6 @@ typedef struct _intpipe {
     //Descritor do pipe interactivo
     int fd;
 } InteractionPipe;
-
-typedef struct _clientdata {
-    int valid;
-    char intServerPipeName[PIPE_NAME_MAX];
-} ClientData;
 
 #endif /* SERVER_DEFAULTS_H */
 
