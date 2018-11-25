@@ -37,6 +37,7 @@ void writeKey(int key, char* linha, int x);
 void getLinha(char* linha, int y);
 void backSpaceKey(char* linha, int x, int y);
 void deleteKey(char* linha, int x, int y);
+void editor(char* user);
 //WINDOW* masterWin;
 WINDOW* titleWin;
 WINDOW* userWin;
@@ -410,40 +411,14 @@ void deleteKey(char* linha, int x, int y) {
     writeTextLine(linha, y);
 }
 
-int sendLoginToServer(char* login) {
-    int fdSv = openNamedPipe(MAIN_PIPE_SERVER, O_WRONLY);
-    int res = write(fdSv, login, 9);
-
-    if (res == -1) {
-        fprintf(stderr, "[ERRO]: Nao foi enviado o login para o servidor!\n");
-        return 1;
-    }
-
-    int fdMyPipe = openNamedPipe(PIPE_USER, O_RDONLY);
-
-    configuraSinal(SIGUSR2);
-
-    // TODO LER PIPES
-    return 0;
-}
-
-/**
- * Função responsável por executar o comportamento de numSinal.
- * @param numSinal Código do sinal.
- */
-void trataSinal(int numSinal) {
-    if (numSinal == SIGUSR2) {
-        //TODO FECHAR PIPES
-        //TODO ELIMINAR O MEU
-    }
-}
-
 /**
  * Função responsável por redefinir o comportamento de sinal.
  * @param sinal o sinal que o programa recebeu
  */
+/*
 void configuraSinal(int sinal) {
     if (signal(sinal, trataSinal) == SIG_ERR) {
         perror("Erro a tratar sinal!");
     }
 }
+*/
