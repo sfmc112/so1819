@@ -14,6 +14,12 @@
 #define PIPE_NAME_MAX 50
 #define NUM_INTERACTIVE_PIPES 5
 
+#ifdef NO_IDE
+#include "medit-defaults.h"
+#else
+#include "../medit-defaults.h"
+#endif
+
 
 int createNamedPipe(char* nomePipe, char* dono);
 int createServerNamedPipe();
@@ -21,6 +27,7 @@ int deleteNamedPipe(char* pathname);
 int openNamedPipe(char* pathname, int mode);
 int closeNamedPipe(int fd);
 
+void writeServerMsg(int fd, ServerMsg* msg);
 
 #endif /* BIBLIOTECA_H */
 

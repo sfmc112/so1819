@@ -1,7 +1,6 @@
 #ifndef MEDIT_DEFAULTS_H
 #define MEDIT_DEFAULTS_H
 
-#include "Biblioteca/biblioteca.h"
 
 #define VAR_AMBIENTE_LINHAS "MEDIT_MAXLINES"
 #define VAR_AMBIENTE_COLUNAS "MEDIT_MAXCOLUMNS"
@@ -32,6 +31,8 @@
 #define K_BACKSPACE 107
 #define K_CHAR 108
 
+#define PIPE_MAX_NAME 50
+
 //Definição das estruturas de dados
 
 typedef struct _line {
@@ -52,7 +53,7 @@ struct _editordata {
 typedef struct _servermessage {
     EditorData ed;
     int code; // 0 caso nao haja erro, 1 caso contrário
-    char intPipeName[PIPE_NAME_MAX];
+    char intPipeName[PIPE_MAX_NAME];
 } ServerMsg;
 
 typedef struct _clientmessage {
@@ -63,7 +64,7 @@ typedef struct _clientmessage {
 
 typedef struct _loginmsg {
     char username[9];
-    char nomePipeCliente[PIPE_NAME_MAX];
+    char nomePipeCliente[PIPE_MAX_NAME];
 } LoginMsg;
 
 #endif

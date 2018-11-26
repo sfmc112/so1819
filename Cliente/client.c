@@ -6,7 +6,7 @@
 #include "biblioteca.h"
 #include "client-functions.h"
 
-void sendLoginToServer(char* login);
+void sendLoginToServer(char* user);
 
 
 int fdMyPipe, fdSv;
@@ -61,8 +61,12 @@ void trataSinal(int numSinal) {
  * Função responsável por enviar o username para o servidor. Fazendo com que o mesmo seja validado.
  * @param login username do cliente
  */
-void sendLoginToServer(char* login) {
-    int res = write(fdSv, login, strlen(user));
+void sendLoginToServer(char* user) {
+    LoginMsg login;
+    strncpy(login.username, user, 9);
+    strncpy(login.nomePipeCliente, mainPipe, PIPE_MAX_NAME); 
+    
+    int res = write(fdSv, &login, sizeof(login));
 
     if (res == -1) {
         fprintf(stderr, "[ERRO]: Nao foi enviado o login para o servidor!\n");
@@ -81,10 +85,7 @@ void sendLoginToServer(char* login) {
     }
 
     if (msg.code == LOGIN_FAILURE) {
-        // Username incorreto
-        closeNamedPipe(fdMyPipe);
-        closeNamedPipe(fdSv);
-        deleteNamedPipe(mainPipe);
+        printf("Login Falhou! A aplicação vai encerrar....\n");
     } else {
         // Login Efetuado com sucesso
         editor(user);

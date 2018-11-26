@@ -7,7 +7,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "server-commands.h"
-#include "server-functions.h"
 #include "server-utils.h"
 #include "server-users.h"
 #include <pthread.h>
@@ -213,14 +212,24 @@ void* readFromMainPipe() {
     int nBytes;
     LoginMsg login;
     ServerMsg msg;
+    int fdCli;
 
     while (sData.runServer) {
-        nBytes = read(fdMainPipe, &login, sizeof (LoginMsg));
+        nBytes = read(fdMainPipe, &login, sizeof (login));
         if (nBytes == sizeof (LoginMsg)) {
+            fdCli = openNamedPipe(login.nomePipeCliente, O_WRONLY);
+            printf("\n\n%s\n\n", login.nomePipeCliente);
+            if (fdCli == -1)
+                printf("R.I.P\n");
+
             if (!checkUsername(login.username) || checkUserOnline(login.username, sData)) {
                 msg.code = LOGIN_FAILURE;
-                
+                printf("Falhou o login\n");
+            } else {
+                msg.code = LOGIN_SUCCESS;
+                printf("Login correto\n");
             }
+            write(fdCli, &msg, sizeof (msg));
         }
     }
 }

@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "server-utils.h"
-#include "server-defaults.h"
 
 /**
  * Função para verificar se o username está no ficheiro de utilizadores

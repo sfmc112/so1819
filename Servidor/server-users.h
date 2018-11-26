@@ -14,6 +14,8 @@
 #ifndef USERS_H
 #define USERS_H
 
+#include "server-functions.h"
+
 #define USERSDEFAULT_DB "medit.db"
 #define MAX_NAME 8
 
