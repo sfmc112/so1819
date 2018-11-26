@@ -11,7 +11,6 @@
 #include "server-users.h"
 #include <pthread.h>
 
-
 void* readCommands();
 void trataSinal(int numSinal);
 void configuraSinal(int sinal);
@@ -146,6 +145,7 @@ void configuraSinal(int sinal) {
 
 /**
  * Função responsável por criar os named pipes do servidor.
+ * @param pipes Array de Pipes Interativo
  */
 void createNamedPipesServer(InteractionPipe* pipes) {
     char pipeName[PIPE_NAME_MAX];
@@ -159,6 +159,10 @@ void createNamedPipesServer(InteractionPipe* pipes) {
     }
 }
 
+/**
+ * Função responsável por abrir os named pipes do servidor.
+ * @param pipes Array de Pipes Interativo
+ */
 void openNamedPipesServer(InteractionPipe* pipes) {
     fdMainPipe = openNamedPipe(sData.mainPipe, O_RDWR);
 
@@ -167,6 +171,10 @@ void openNamedPipesServer(InteractionPipe* pipes) {
     }
 }
 
+/**
+ * Função responsável por inicializar o número de utilizadores em cada pipe interativo a 0.
+ * @param pipes Array de Pipes Interativo
+ */
 void initializeInteractivePipes(InteractionPipe* pipes) {
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++) {
@@ -176,17 +184,23 @@ void initializeInteractivePipes(InteractionPipe* pipes) {
 
 /*-----------------------THREADS---------------------------------------*/
 
+/**
+ * Função responsável por criar as threads.
+ * @param commands Thread para leitura de comandos
+ * @param mainpipe Thread para ler do pipe principal do servidor
+ * @param intpipes Array dos Pipes Interativos
+ */
 void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[]) {
     int err;
-    err = pthread_create((commands), NULL, readCommands, NULL);
+    err = pthread_create(commands, NULL, readCommands, NULL);
     if (err)
-        printf("\nNão foi possível criar a thread :[%s]", strerror(err));
+        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
     else
         printf("\n A thread foi criada!\n");
 
-    err = pthread_create((mainpipe), NULL, readFromMainPipe, NULL);
+    err = pthread_create(mainpipe, NULL, readFromMainPipe, NULL);
     if (err)
-        printf("\nNão foi possível criar a thread :[%s]", strerror(err));
+        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
     else
         printf("\n A thread foi criada!\n");
 
@@ -194,12 +208,18 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
     for (i = 0; i < sData.numInteractivePipes; i++) {
         err = pthread_create((&intpipes[i]), NULL, readFromClientPipe, NULL);
         if (err)
-            printf("\nNão foi possível criar a thread :[%s]", strerror(err));
+            printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
         else
             printf("\n A thread foi criada!\n");
     }
 }
 
+/**
+ * Função responsável por juntar as Threads.
+ * @param commands Thread para leitura de comandos
+ * @param mainpipe Thread para ler do pipe principal do servidor
+ * @param intpipes Array dos Pipes Interativos
+ */
 void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
     pthread_join(commands, NULL);
     pthread_join(mainpipe, NULL);
@@ -208,6 +228,10 @@ void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
         pthread_join(intpipes[i], NULL);
 }
 
+/**
+ * Função responsável por efetuar a leitura do pipe principal do servidor.
+ * @return Ponteiro para void (void*)
+ */
 void* readFromMainPipe() {
     int nBytes;
     LoginMsg login;
@@ -233,6 +257,11 @@ void* readFromMainPipe() {
         }
     }
 }
+
+/**
+ * Função repsonsável por efetuar a leitura dos pipes interativos.
+ * @return Ponteiro para void (void*)
+ */
 
 void* readFromClientPipe() {
     //TODO por acabar

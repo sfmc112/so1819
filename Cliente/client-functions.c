@@ -37,7 +37,7 @@ void writeKey(int key, char* linha, int x);
 void getLinha(char* linha, int y);
 void backSpaceKey(char* linha, int x, int y);
 void deleteKey(char* linha, int x, int y);
-void editor(char* user);
+void editor(char* user, EditorData * ed);
 //WINDOW* masterWin;
 WINDOW* titleWin;
 WINDOW* userWin;
@@ -85,7 +85,7 @@ void loginSession(char* user) {
 /**
  * Função responsável por tudo acerca do editor.
  */
-void editor(char* user) { /*receber nome do utilizador e escreve-lo só em modo de edição*/
+void editor(char* user, EditorData * ed) { /*receber nome do utilizador e escreve-lo só em modo de edição*/
     initscr();
     start_color();
     clear();
