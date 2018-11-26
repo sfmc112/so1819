@@ -58,7 +58,7 @@ typedef struct _servermessage {
 } ServerMsg;
 
 typedef struct _clientmessage {
-    int msgType; //tipo de mensagem
+    int msgType; // Tipo de mensagem:\n\n - MOVE_UP 100\n - MOVE_DOWN 101\n - MOVE_LEFT 102\n - MOVE_RIGHT 103\n - K_ENTER 104\n - K_ESC 105\n - K_DEL 106\n - K_BACKSPACE 107\n - K_CHAR 108\n - CLIENT_SHUTDOWN 109
     char letra;
     char username[9];
 } ClientMsg;

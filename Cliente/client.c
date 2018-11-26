@@ -41,7 +41,6 @@ int main(int argc, char** argv) {
 
     sendLoginToServer(user);
 
-
     // Login Efetuado com sucesso
     pthread_t idEditor;
     pthread_t idMyPipe;
@@ -157,11 +156,17 @@ void* readFromMyPipe() {
 void exitClient() {
     printf("A aplicação vai encerrar....\n");
 
+    ClientMsg msg;
+
+    msg.msgType = CLIENT_SHUTDOWN;
+    strncpy(msg.username, user, 9);
     
+    write(fdSv, &msg, sizeof (msg));
 
     closeNamedPipe(fdMyPipe);
     closeNamedPipe(fdSv);
     deleteNamedPipe(myPipe);
+    exit(0);
 }
 
 void exitLoginFailure() {
