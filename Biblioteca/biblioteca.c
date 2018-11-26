@@ -41,7 +41,7 @@ int createNamedPipe(char* nomePipe, char* dono) {
         }
     }
 
-    printf("O pipe <%s> foi criado com sucesso!", nomePipe);
+    printf("O pipe <%s> foi criado com sucesso!\n", nomePipe);
 
     return 0;
 }
@@ -58,7 +58,7 @@ int createServerNamedPipe(char* pipeName) {
             return fatalErrorMsg("Nao consegui criar o pipe", "createNamedPipe()");
         }
     }
-    printf("O pipe do servidor foi criado com sucesso!");
+    printf("O pipe do servidor foi criado com sucesso!\n");
 
     return 0;
 }
@@ -87,7 +87,7 @@ int openNamedPipe(char* pathname, int mode) {
         return fatalErrorMsg("Nao consegui abrir o pipe para escrita", "openNamedPipe()");
     }
 
-    printf("O pipe <%s> foi criado com sucesso!", pathname);
+    printf("O pipe <%s> foi criado com sucesso!\n", pathname);
 
     return fd;
 }

@@ -10,6 +10,7 @@
 
 void checkArgs(int argc, char** argv, char* pipeName, char* user);
 void loginSession();
-void editor(char* user);
+void editor(char* user, EditorData * ed);
 void editMode(int y, int x, char* linha);
+void clearEditor(int dimY, int dimX);
 #endif /* CLIENT_FUNCTIONS_H */

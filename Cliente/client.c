@@ -5,13 +5,19 @@
 #include <unistd.h>
 #include "biblioteca.h"
 #include "client-functions.h"
+#include <pthread.h>
 
 void sendLoginToServer(char* user);
-
+void exitClient();
+void exitLoginFailure();
+void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe);
+void* startEditor();
+void* readFromMyPipe();
 
 int fdMyPipe, fdSv;
 char user[9];
-char mainPipe[PIPE_NAME_MAX];
+char myPipe[PIPE_NAME_MAX];
+EditorData ed;
 
 int main(int argc, char** argv) {
     fdSv = openNamedPipe(MAIN_PIPE_SERVER, O_WRONLY);
@@ -23,21 +29,28 @@ int main(int argc, char** argv) {
 
     char tempPipe[PIPE_NAME_MAX];
 
-    strncpy(mainPipe, PIPE_USER, PIPE_NAME_MAX);
+    strncpy(myPipe, PIPE_USER, PIPE_NAME_MAX);
 
     //configuraSinal(SIGUSR2);
 
-    checkArgs(argc, argv, mainPipe, user);
+    checkArgs(argc, argv, myPipe, user);
 
-    createNamedPipe(tempPipe, mainPipe);
+    createNamedPipe(tempPipe, myPipe);
 
-    strncpy(mainPipe, tempPipe, PIPE_NAME_MAX);
+    strncpy(myPipe, tempPipe, PIPE_NAME_MAX);
 
     sendLoginToServer(user);
 
-    closeNamedPipe(fdMyPipe);
-    closeNamedPipe(fdSv);
-    deleteNamedPipe(mainPipe);
+
+    // Login Efetuado com sucesso
+    pthread_t idEditor;
+    pthread_t idMyPipe;
+
+    createClientStartingThreads(&idEditor, &idMyPipe);
+    pthread_join(idEditor, NULL);
+    pthread_join(idMyPipe, NULL);
+
+    exitClient();
     return (EXIT_SUCCESS);
 }
 
@@ -64,16 +77,16 @@ void trataSinal(int numSinal) {
 void sendLoginToServer(char* user) {
     LoginMsg login;
     strncpy(login.username, user, 9);
-    strncpy(login.nomePipeCliente, mainPipe, PIPE_MAX_NAME); 
-    
-    int res = write(fdSv, &login, sizeof(login));
+    strncpy(login.nomePipeCliente, myPipe, PIPE_MAX_NAME);
+
+    int res = write(fdSv, &login, sizeof (login));
 
     if (res == -1) {
         fprintf(stderr, "[ERRO]: Nao foi enviado o login para o servidor!\n");
         return; // TODO TEM QUE SER ALTERADO
     }
 
-    fdMyPipe = openNamedPipe(mainPipe, O_RDONLY);
+    fdMyPipe = openNamedPipe(myPipe, O_RDONLY);
 
     ServerMsg msg;
 
@@ -85,9 +98,76 @@ void sendLoginToServer(char* user) {
     }
 
     if (msg.code == LOGIN_FAILURE) {
-        printf("Login Falhou! A aplicação vai encerrar....\n");
-    } else {
-        // Login Efetuado com sucesso
-        editor(user);
+        printf("Login Falhou!\n");
     }
+
+    closeNamedPipe(fdSv);
+}
+
+void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
+    int err;
+    err = pthread_create(idEditor, NULL, startEditor, NULL);
+    if (err)
+        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+    else
+        printf("\n A thread foi criada!\n");
+
+    err = pthread_create(idMyPipe, NULL, readFromMyPipe, NULL);
+    if (err)
+        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+    else
+        printf("\n A thread foi criada!\n");
+}
+
+void* startEditor() {
+    //todo mutex
+    editor(user, &ed);
+}
+
+void* readFromMyPipe() {
+    int nBytes;
+    ServerMsg msg;
+    int serverUp = 1;
+
+    while (serverUp) {
+        nBytes = read(fdMyPipe, &msg, sizeof (msg));
+        if (nBytes == sizeof (msg)) {
+            switch (msg.code) {
+                case SERVER_SHUTDOWN:
+                    serverUp = 0;
+                    break;
+                case EDITOR_UPDATE:
+                    fdSv = openNamedPipe(msg.intPipeName, O_WRONLY);
+                    if (fdSv == -1) {
+                        fprintf(stderr, "[ERRO]: Nao foi possivel abrir pipe interativo <%s> atribuido pelo servidor.\n", msg.intPipeName);
+                    } else {
+                        // TODO Terá que ser protegido por Mutex
+                        ed = msg.ed;
+                        // Atualizar Ecra
+                        clearEditor(msg.ed.lin, msg.ed.col);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+void exitClient() {
+    printf("A aplicação vai encerrar....\n");
+
+    
+
+    closeNamedPipe(fdMyPipe);
+    closeNamedPipe(fdSv);
+    deleteNamedPipe(myPipe);
+}
+
+void exitLoginFailure() {
+    printf("A aplicação vai encerrar....\n");
+    closeNamedPipe(fdMyPipe);
+    closeNamedPipe(fdSv);
+    deleteNamedPipe(myPipe);
+    exit(0);
 }

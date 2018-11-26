@@ -30,6 +30,7 @@
 #define K_DEL 106
 #define K_BACKSPACE 107
 #define K_CHAR 108
+#define CLIENT_SHUTDOWN 109
 
 #define PIPE_MAX_NAME 50
 
@@ -52,7 +53,7 @@ struct _editordata {
 
 typedef struct _servermessage {
     EditorData ed;
-    int code; // 0 caso nao haja erro, 1 caso contrário
+    int code; // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_UPDATE 3
     char intPipeName[PIPE_MAX_NAME];
 } ServerMsg;
 
