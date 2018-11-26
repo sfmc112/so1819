@@ -19,6 +19,10 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
+
+int contaPalavras(char * msg);
+int contaAsteriscos(char* msg);
 
 /*
  * 
@@ -26,36 +30,88 @@
 int main(int argc, char** argv) {
     int pidPai = getpid();
     int pidFilho;
-    int fdpipe[2];
+    int fdPipeToAspell[2];
+    int fdPipeFromAspell[2];
     int estado;
-    
-    pipe(fdpipe);
-    
-    pidFilho = fork();
-    
-    if(pidFilho == 0){
-        pidFilho = getpid();
-        char mensagem[256];
-        int nBytes;
-        dup2(fdpipe[0], 0);
-        execlp("aspell", "aspell", "-a", "-d", "pt_PT", NULL);
-    }else{
-       dup2(fdpipe[1], 1);
-       char msg[256];
-       while(1){
-           fgets(msg, 256, stdin);
-           if(strncmp(msg, "exit", 4) == 0){
-               break;
-           }
-           write(fdpipe[1], msg, strlen(msg));
-       }
-        //close(fdpipe[1]);
-       kill(pidFilho, SIGINT);
-       wait(&estado);
-    }
-    
-    
 
-    return (EXIT_SUCCESS);
+    pipe(fdPipeToAspell);
+    pipe(fdPipeFromAspell);
+
+    pidFilho = fork();
+
+    if (pidFilho == 0) {
+        pidFilho = getpid();
+        dup2(fdPipeToAspell[0], STDIN_FILENO);
+        close(fdPipeToAspell[1]);
+        dup2(fdPipeFromAspell[1], STDOUT_FILENO);
+        close(fdPipeFromAspell[0]);
+        execlp("aspell", "aspell", "-a", "-d", "pt_PT", NULL);
+    } else {
+        close(fdPipeToAspell[0]);
+        close(fdPipeFromAspell[1]);
+
+        char msg[1024];
+        int bytesRead;
+        char resp[4096];
+        int numPalavras;
+        int numAstericos;
+        int i;
+
+        bytesRead = read(fdPipeFromAspell[0], resp, 4096);
+        resp[bytesRead - 1] = 0;
+        printf("Aspell: <%s>\n", resp);
+
+        while (1) {
+            fgets(msg, 1024, stdin);
+            numPalavras = contaPalavras(msg);
+            //msg[strlen(msg) - 1] = '\0';
+            if (strncmp(msg, "exit", 4) == 0) {
+                break;
+            }
+            write(fdPipeToAspell[1], msg, strlen(msg));
+            bytesRead = read(fdPipeFromAspell[0], resp, 4096);
+            resp[bytesRead - 1] = 0;
+            printf("\nAspell: <%s>\n\n", resp);
+            //msg[strlen(msg) - 1] = '\0';
+
+            numAstericos = contaAsteriscos(resp);
+
+            if (numPalavras == numAstericos)
+                fprintf(stdout, "A frase <%s> esta correta\n", msg);
+            else
+                fprintf(stdout, "Houve um erro na frase <%s>!\n", msg);
+
+        }
+        close(fdPipeToAspell[1]);
+        wait(&estado);
+        return (EXIT_SUCCESS);
+    }
+}
+
+int contaPalavras(char * msg) {
+    char tempMsg[1024];
+    strncpy(tempMsg, msg, 1024);
+    char* token;
+    int conta = 0;
+
+    token = strtok(tempMsg, " .,;:-_?!");
+    conta++;
+
+    while ((token = strtok(NULL, " .,;:-_?!")) != NULL)
+        conta++;
+
+    return conta;
+}
+
+int contaAsteriscos(char* msg) {
+    int i = 0, conta = 0;
+    //msg[strlen(msg)] = '\0';
+    while (msg[i] != '\0') {
+        if (msg[i] == '*')
+            conta++;
+        i++;
+    }
+
+    return conta;
 }
 
