@@ -27,7 +27,7 @@ server-functions.o : server-functions.c
 	gcc server-functions.c -c $(HEADERS) $(RUN)
 
 client : client.o $(CLIENT_DEPENDENCIES)
-	gcc $(CLIENT_DEPENDENCIES) client.o -o cliente $(FLAGS) $(NCURSES)
+	gcc $(CLIENT_DEPENDENCIES) client.o -o cliente $(FLAGS) $(NCURSES) $(PTHREAD)
 
 client.o : client.c
 	gcc client.c -c $(HEADERS) $(RUN)

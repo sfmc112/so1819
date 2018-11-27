@@ -130,4 +130,42 @@ void initializeServerData(ServerData* sd) {
     strncpy(sd->mainPipe, MAIN_PIPE_SERVER, PIPE_NAME_MAX);
     strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
     sd->numInteractivePipes = NUM_INTERACTIVE_PIPES;
+    for (int i = 0; i < DEFAULT_MAXUSERS; i++) {
+        sd->clients[i].valid = 0;
+    }
+}
+
+int getFirstAvailablePosition(ServerData sd) {
+    int j;
+    for (j = 0; j < DEFAULT_MAXUSERS && sd.clients[j].valid; j++)
+        ;
+    return j < DEFAULT_MAXUSERS ? j : -1;
+
+}
+
+void registerClient(char* username, ServerData* sData, int pos, int fdCli, int fdIntPipe) {
+    sData->clients[pos].valid = 1;
+    strncpy(sData->clients[pos].username, username, 9);
+    sData->clients[pos].fdPipeClient = fdCli;
+    sData->clients[pos].fdIntPipe = fdIntPipe;
+}
+
+int getIntPipe(ServerData sd, InteractionPipe* pipes) {
+    int i, menor = 0;
+    for (i = 1; i < sd.numInteractivePipes; i++)
+        if (pipes[i].numUsers < pipes[menor].numUsers) {
+            menor = i;
+        }
+    pipes[menor].numUsers++;
+    return menor;
+}
+
+void closeAndDeleteIntPipes(ServerData* sd, InteractionPipe* pipes) {
+    int i;
+    char buffer[] = "close";
+    // TODO MUDAMOS TODO O PROCESSO DPS FAZ-SE
+    for (i = 0; i < sd->numInteractivePipes; i++) {
+        write(pipes[i].fd, buffer, strlen(buffer));
+
+    }
 }

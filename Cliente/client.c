@@ -85,20 +85,23 @@ void sendLoginToServer(char* user) {
         return; // TODO TEM QUE SER ALTERADO
     }
 
-    fdMyPipe = openNamedPipe(myPipe, O_RDONLY);
+    /*
+    
+        fdMyPipe = openNamedPipe(myPipe, O_RDONLY);
 
-    ServerMsg msg;
+        ServerMsg msg;
 
-    res = read(fdMyPipe, &msg, sizeof (msg));
+        res = read(fdMyPipe, &msg, sizeof (msg));
 
-    if (res == -1) {
-        fprintf(stderr, "[ERRO]: Nao foi possivel ler a resposta do servidor!\n");
-        return; // TODO TEM QUE SER ALTERADO
-    }
+        if (res == -1) {
+            fprintf(stderr, "[ERRO]: Nao foi possivel ler a resposta do servidor!\n");
+            return; // TODO TEM QUE SER ALTERADO
+        }
 
-    if (msg.code == LOGIN_FAILURE) {
-        printf("Login Falhou!\n");
-    }
+        if (msg.code == LOGIN_FAILURE) {
+            printf("Login Falhou!\n");
+        }
+     */
 
     closeNamedPipe(fdSv);
 }
@@ -137,19 +140,26 @@ void* readFromMyPipe() {
         nBytes = read(fdMyPipe, &msg, sizeof (msg));
         if (nBytes == sizeof (msg)) {
             switch (msg.code) {
-                case SERVER_SHUTDOWN:
-                    serverUp = 0;
+                case LOGIN_FAILURE:
+                    printf("Login Falhou!\n");
+                    exitLoginFailure();
                     break;
-                case EDITOR_UPDATE:
+                case LOGIN_SUCCESS:
                     fdSv = openNamedPipe(msg.intPipeName, O_WRONLY);
                     if (fdSv == -1) {
                         fprintf(stderr, "[ERRO]: Nao foi possivel abrir pipe interativo <%s> atribuido pelo servidor.\n", msg.intPipeName);
                     } else {
-                        // TODO Terá que ser protegido por Mutex
-                        ed = msg.ed;
-                        // Atualizar Ecra
-                        clearEditor(msg.ed.lin, msg.ed.col);
+                        exitLoginFailure();
                     }
+                    break;
+                case SERVER_SHUTDOWN:
+                    serverUp = 0;
+                    break;
+                case EDITOR_UPDATE:
+                    // TODO Terá que ser protegido por Mutex
+                    ed = msg.ed;
+                    // Atualizar Ecra
+                    clearEditor(msg.ed.lin, msg.ed.col);
                     break;
                 default:
                     break;

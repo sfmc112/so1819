@@ -18,7 +18,7 @@ void createNamedPipesServer(InteractionPipe* pipes);
 void openNamedPipesServer(InteractionPipe* pipes);
 void initializeInteractivePipes(InteractionPipe* pipes);
 
-void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[]);
+void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes);
 void* readFromMainPipe();
 void* readFromClientPipe();
 void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]);
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     pthread_t idMainPipe;
     pthread_t idIntPipes[sData.numInteractivePipes];
 
-    createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes);
+    createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
 
     //Fechar o programa
 
@@ -62,9 +62,10 @@ int main(int argc, char** argv) {
     //Fechar o programa
     printf("O servidor vai terminar!\n");
     //TODO these
+    closeAndDeleteIntPipes(&sData, interactivePipes);
     //closePipes(interactivePipes);
     //deletePipes(interactivePipes);
-
+    remove("/tmp/unique.txt");
     return (EXIT_SUCCESS);
 }
 
@@ -190,7 +191,7 @@ void initializeInteractivePipes(InteractionPipe* pipes) {
  * @param mainpipe Thread para ler do pipe principal do servidor
  * @param intpipes Array dos Pipes Interativos
  */
-void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[]) {
+void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes) {
     int err;
     err = pthread_create(commands, NULL, readCommands, NULL);
     if (err)
@@ -198,7 +199,7 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
     else
         printf("\n A thread foi criada!\n");
 
-    err = pthread_create(mainpipe, NULL, readFromMainPipe, NULL);
+    err = pthread_create(mainpipe, NULL, readFromMainPipe, (void*) pipes);
     if (err)
         printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
     else
@@ -206,7 +207,7 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
 
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++) {
-        err = pthread_create((&intpipes[i]), NULL, readFromClientPipe, NULL);
+        err = pthread_create((&intpipes[i]), NULL, readFromClientPipe, (void*) &(pipes[i].fd));
         if (err)
             printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
         else
@@ -222,6 +223,9 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
  */
 void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
     pthread_join(commands, NULL);
+    
+    //writes fakes
+    
     pthread_join(mainpipe, NULL);
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++)
@@ -232,12 +236,13 @@ void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
  * Função responsável por efetuar a leitura do pipe principal do servidor.
  * @return Ponteiro para void (void*)
  */
-void* readFromMainPipe() {
+void* readFromMainPipe(void* arg) {
     int nBytes;
     LoginMsg login;
     ServerMsg msg;
     int fdCli;
-
+    InteractionPipe* pipes;
+    pipes = arg;
     while (sData.runServer) {
         nBytes = read(fdMainPipe, &login, sizeof (login));
         if (nBytes == sizeof (LoginMsg)) {
@@ -250,8 +255,14 @@ void* readFromMainPipe() {
                 msg.code = LOGIN_FAILURE;
                 printf("Falhou o login\n");
             } else {
-                msg.code = LOGIN_SUCCESS;
-                printf("Login correto\n");
+                int pos = getFirstAvailablePosition(sData);
+                if (pos != -1) {
+                    msg.code = LOGIN_SUCCESS;
+                    int index = getIntPipe(sData, pipes);
+                    strncpy(msg.intPipeName, pipes[index].pipeName, PIPE_MAX_NAME);
+                    registerClient(login.username, &sData, pos, fdCli, pipes[index].fd);
+                    printf("Login correto\n");
+                }
             }
             write(fdCli, &msg, sizeof (msg));
         }
@@ -263,10 +274,12 @@ void* readFromMainPipe() {
  * @return Ponteiro para void (void*)
  */
 
-void* readFromClientPipe() {
-    //TODO por acabar
+void* readFromClientPipe(void* arg) {
+    ClientMsg msg;
+    int nBytes;
+    int *fd = (int*) arg;
     while (sData.runServer) {
-        printf("Fake read from client pipe...\n");
-        sleep(8);
+        nBytes = read(*fd, &msg, sizeof (msg));
+
     }
 }
