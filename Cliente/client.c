@@ -103,6 +103,11 @@ void sendLoginToServer(char* user) {
     closeNamedPipe(fdSv);
 }
 
+/**
+ * Função responsável por criar as threads.
+ * @param idEditor Thread idEditor
+ * @param idMyPipe Thread idMyPipe
+ */
 void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
     int err;
     err = pthread_create(idEditor, NULL, startEditor, NULL);
@@ -119,7 +124,7 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
 }
 
 void* startEditor() {
-    //todo mutex
+    //TODO mutex
     editor(user, &ed);
 }
 
@@ -160,7 +165,7 @@ void exitClient() {
 
     msg.msgType = CLIENT_SHUTDOWN;
     strncpy(msg.username, user, 9);
-    
+
     write(fdSv, &msg, sizeof (msg));
 
     closeNamedPipe(fdMyPipe);
