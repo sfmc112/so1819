@@ -19,9 +19,9 @@ void openNamedPipesServer(InteractionPipe* pipes);
 void initializeInteractivePipes(InteractionPipe* pipes);
 
 void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes);
-void* readFromMainPipe();
-void* readFromIntPipe();
-void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]);
+void* readFromMainPipe(void* arg);
+void* readFromIntPipe(void* arg);
+void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
 
 EditorData eData;
 ServerData sData;
@@ -37,7 +37,6 @@ int main(int argc, char** argv) {
 
     InteractionPipe interactivePipes[sData.numInteractivePipes];
     initializeInteractivePipes(interactivePipes);
-    openNamedPipesServer(interactivePipes);
 
     configuraSinal(SIGUSR1);
 
@@ -55,16 +54,15 @@ int main(int argc, char** argv) {
 
     createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
 
-    //Fechar o programa
-    
+    //Fechar o programa 
     pthread_join(idCommands, NULL);
     
     //Fechar o programa
     printf("O servidor vai terminar!\n");
-
+    
     closeAndDeleteServerPipes(fdMainPipe, &sData, interactivePipes);
 
-    joinThreads(idCommands, idMainPipe, idIntPipes);
+    joinThreads(idMainPipe, idIntPipes);
 
     remove("/tmp/unique.txt");
     return (EXIT_SUCCESS);
@@ -222,8 +220,7 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
  * @param mainpipe Thread para ler do pipe principal do servidor
  * @param intpipes Array dos Pipes Interativos
  */
-void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
-
+void joinThreads(pthread_t mainpipe, pthread_t intpipes[]) {
     pthread_join(mainpipe, NULL);
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++)
@@ -240,16 +237,20 @@ void* readFromMainPipe(void* arg) {
     ServerMsg msg;
     int fdCli;
     int pos;
-    InteractionPipe* pipes;
-    pipes = arg;
+    InteractionPipe* pipes = (InteractionPipe*) arg;
+
     while (sData.runServer) {
-        nBytes = read(fdMainPipe, &login, sizeof (login));
+        printf("Estou a espera de input do cliente\n");
+        nBytes = read(fdMainPipe, &login, sizeof (LoginMsg));
+        printf("Recebi informacao\n");
         if (nBytes == sizeof (LoginMsg)) {
+            printf("Recebi login\n");
             fdCli = openNamedPipe(login.nomePipeCliente, O_WRONLY);
             printf("\n\n%s\n\n", login.nomePipeCliente);
             if (fdCli == -1)
                 continue;
             pos = getFirstAvailablePosition(sData);
+            printf("Pos: %d\n", pos);
             if (!checkUsername(login.username) || checkUserOnline(login.username, sData) || pos == -1) {
                 msg.code = LOGIN_FAILURE;
                 printf("Falhou o login\n");

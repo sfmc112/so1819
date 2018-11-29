@@ -22,7 +22,7 @@
 
 
 int createNamedPipe(char* nomePipe, char* dono);
-int createServerNamedPipe();
+int createServerNamedPipe(char* pipeName);
 int deleteNamedPipe(char* pathname);
 int openNamedPipe(char* pathname, int mode);
 int closeNamedPipe(int fd);

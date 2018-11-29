@@ -52,6 +52,7 @@ int createNamedPipe(char* nomePipe, char* dono) {
  */
 int createServerNamedPipe(char* pipeName) {
     if (mkfifo(pipeName, S_IRUSR | S_IWUSR) == -1) {
+        printf("\n%s\n\n", pipeName);
         if (errno == EEXIST)
             printf("A fifo <%s> existente sera usada!\n", pipeName);
         else {
@@ -87,7 +88,7 @@ int openNamedPipe(char* pathname, int mode) {
         return fatalErrorMsg("Nao consegui abrir o pipe para escrita", "openNamedPipe()");
     }
 
-    printf("O pipe <%s> foi criado com sucesso!\n", pathname);
+    printf("O pipe <%s> foi aberto com sucesso!\n", pathname);
 
     return fd;
 }

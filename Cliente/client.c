@@ -14,6 +14,7 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe);
 void* startEditor();
 void* readFromMyPipe();
 
+int runClient = 1;
 int fdMyPipe, fdSv;
 char user[9];
 char myPipe[PIPE_NAME_MAX];
@@ -47,9 +48,11 @@ int main(int argc, char** argv) {
 
     createClientStartingThreads(&idEditor, &idMyPipe);
     pthread_join(idEditor, NULL);
+    
+    //A aplicaçao vai terminar...
+    exitClient();
     pthread_join(idMyPipe, NULL);
 
-    exitClient();
     return (EXIT_SUCCESS);
 }
 
@@ -74,36 +77,49 @@ void trataSinal(int numSinal) {
  * @param login username do cliente
  */
 void sendLoginToServer(char* user) {
+    
+    //printf("Estou a abrir o meu pipe %s\n", myPipe);
+    fdMyPipe = openNamedPipe(myPipe, O_RDWR); 
+    
+    //printf("Ja abri o meu pipe\n");
+    
     LoginMsg login;
     strncpy(login.username, user, 9);
     strncpy(login.nomePipeCliente, myPipe, PIPE_MAX_NAME);
+    
+    //printf("Estou a escrever no servidor\n");
 
     int res = write(fdSv, &login, sizeof (login));
+    
+    //printf("Ja escrevi\n");
 
     if (res == -1) {
         fprintf(stderr, "[ERRO]: Nao foi enviado o login para o servidor!\n");
         return; // TODO TEM QUE SER ALTERADO
     }
 
-    /*
+    //fdMyPipe = openNamedPipe(myPipe, O_RDONLY);
+
+    ServerMsg msg;
+    //printf("Estou a espera da resposta do servidor\n");
+    res = read(fdMyPipe, &msg, sizeof (msg));
+    //printf("Ja li do servidor\n");
+
+    if (res == -1) {
+        fprintf(stderr, "[ERRO]: Nao foi possivel ler a resposta do servidor!\n");
+        exitLoginFailure();
+    }
+   
+    if (msg.code == LOGIN_FAILURE) {
+        printf("Login Falhou!\n");
+        exitLoginFailure();
+    }
     
-        fdMyPipe = openNamedPipe(myPipe, O_RDONLY);
-
-        ServerMsg msg;
-
-        res = read(fdMyPipe, &msg, sizeof (msg));
-
-        if (res == -1) {
-            fprintf(stderr, "[ERRO]: Nao foi possivel ler a resposta do servidor!\n");
-            return; // TODO TEM QUE SER ALTERADO
-        }
-
-        if (msg.code == LOGIN_FAILURE) {
-            printf("Login Falhou!\n");
-        }
-     */
-
     closeNamedPipe(fdSv);
+    
+    //Abrir pipe interativo
+    fdSv = openNamedPipe(msg.intPipeName, O_WRONLY);
+    ed = msg.ed;
 }
 
 /**
@@ -129,6 +145,7 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
 void* startEditor() {
     //TODO mutex
     editor(user, &ed);
+    runClient = 0;
 }
 
 void* readFromMyPipe() {
@@ -136,10 +153,11 @@ void* readFromMyPipe() {
     ServerMsg msg;
     int serverUp = 1;
 
-    while (serverUp) {
+    while (serverUp && runClient) {
         nBytes = read(fdMyPipe, &msg, sizeof (msg));
         if (nBytes == sizeof (msg)) {
             switch (msg.code) {
+                /*
                 case LOGIN_FAILURE:
                     printf("Login Falhou!\n");
                     exitLoginFailure();
@@ -152,6 +170,7 @@ void* readFromMyPipe() {
                         exitLoginFailure();
                     }
                     break;
+                */
                 case SERVER_SHUTDOWN:
                     serverUp = 0;
                     break;
