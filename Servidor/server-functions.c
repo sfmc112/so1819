@@ -61,6 +61,8 @@ void resetMEDITLines(EditorData* ed) {
         for (j = 0; j < ed->col; j++)
             ed->lines[i].text[j] = ' ';
     }
+    
+    strncpy(ed->fileName, "nenhum ficheiro carregado", MAX_FILE_NAME);
 }
 
 /**
@@ -73,7 +75,6 @@ void resetMEDITLines(EditorData* ed) {
  */
 void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
     //Variáveis do Editor
-
     char *l, *c, *t, *mu;
     int lin, col, timeout, maxusers;
 
@@ -160,12 +161,19 @@ int getIntPipe(ServerData sd, InteractionPipe* pipes) {
     return menor;
 }
 
-void closeAndDeleteIntPipes(ServerData* sd, InteractionPipe* pipes) {
+void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* pipes) {
     int i;
     char buffer[] = "close";
-    // TODO MUDAMOS TODO O PROCESSO DPS FAZ-SE
+    write(fdMainPipe, buffer, strlen(buffer));
+    closeNamedPipe(fdMainPipe);
+    deleteNamedPipe(sd->mainPipe);
+    
+    // TODO cada pipe interativo escreve para os seus clientes
+    // para os clientes serem avisados que o servidor encerrou
+    
     for (i = 0; i < sd->numInteractivePipes; i++) {
         write(pipes[i].fd, buffer, strlen(buffer));
-
+        closeNamedPipe(pipes[i].fd);
+        deleteNamedPipe(pipes[i].pipeName);
     }
 }

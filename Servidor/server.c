@@ -20,7 +20,7 @@ void initializeInteractivePipes(InteractionPipe* pipes);
 
 void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes);
 void* readFromMainPipe();
-void* readFromClientPipe();
+void* readFromIntPipe();
 void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]);
 
 EditorData eData;
@@ -56,15 +56,16 @@ int main(int argc, char** argv) {
     createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
 
     //Fechar o programa
+    
+    pthread_join(idCommands, NULL);
+    
+    //Fechar o programa
+    printf("O servidor vai terminar!\n");
+
+    closeAndDeleteServerPipes(fdMainPipe, &sData, interactivePipes);
 
     joinThreads(idCommands, idMainPipe, idIntPipes);
 
-    //Fechar o programa
-    printf("O servidor vai terminar!\n");
-    //TODO these
-    closeAndDeleteIntPipes(&sData, interactivePipes);
-    //closePipes(interactivePipes);
-    //deletePipes(interactivePipes);
     remove("/tmp/unique.txt");
     return (EXIT_SUCCESS);
 }
@@ -207,7 +208,7 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
 
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++) {
-        err = pthread_create((&intpipes[i]), NULL, readFromClientPipe, (void*) &(pipes[i].fd));
+        err = pthread_create((&intpipes[i]), NULL, readFromIntPipe, (void*) &(pipes[i].fd));
         if (err)
             printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
         else
@@ -222,10 +223,7 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
  * @param intpipes Array dos Pipes Interativos
  */
 void joinThreads(pthread_t commands, pthread_t mainpipe, pthread_t intpipes[]) {
-    pthread_join(commands, NULL);
-    
-    //writes fakes
-    
+
     pthread_join(mainpipe, NULL);
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++)
@@ -241,6 +239,7 @@ void* readFromMainPipe(void* arg) {
     LoginMsg login;
     ServerMsg msg;
     int fdCli;
+    int pos;
     InteractionPipe* pipes;
     pipes = arg;
     while (sData.runServer) {
@@ -249,20 +248,17 @@ void* readFromMainPipe(void* arg) {
             fdCli = openNamedPipe(login.nomePipeCliente, O_WRONLY);
             printf("\n\n%s\n\n", login.nomePipeCliente);
             if (fdCli == -1)
-                printf("R.I.P\n");
-
-            if (!checkUsername(login.username) || checkUserOnline(login.username, sData)) {
+                continue;
+            pos = getFirstAvailablePosition(sData);
+            if (!checkUsername(login.username) || checkUserOnline(login.username, sData) || pos == -1) {
                 msg.code = LOGIN_FAILURE;
                 printf("Falhou o login\n");
             } else {
-                int pos = getFirstAvailablePosition(sData);
-                if (pos != -1) {
-                    msg.code = LOGIN_SUCCESS;
-                    int index = getIntPipe(sData, pipes);
-                    strncpy(msg.intPipeName, pipes[index].pipeName, PIPE_MAX_NAME);
-                    registerClient(login.username, &sData, pos, fdCli, pipes[index].fd);
-                    printf("Login correto\n");
-                }
+                msg.code = LOGIN_SUCCESS;
+                int index = getIntPipe(sData, pipes);
+                strncpy(msg.intPipeName, pipes[index].pipeName, PIPE_MAX_NAME);
+                registerClient(login.username, &sData, pos, fdCli, pipes[index].fd);
+                printf("Login correto\n");
             }
             write(fdCli, &msg, sizeof (msg));
         }
@@ -274,7 +270,7 @@ void* readFromMainPipe(void* arg) {
  * @return Ponteiro para void (void*)
  */
 
-void* readFromClientPipe(void* arg) {
+void* readFromIntPipe(void* arg) {
     ClientMsg msg;
     int nBytes;
     int *fd = (int*) arg;

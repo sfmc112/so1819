@@ -22,5 +22,5 @@ void initializeServerData(ServerData* sd);
 int getFirstAvailablePosition(ServerData sd);
 void registerClient(char* username, ServerData* sd, int pos, int fdCli, int fdIntPipe);
 int getIntPipe(ServerData sd, InteractionPipe* pipes);
-void closeAndDeleteIntPipes(ServerData* sd, InteractionPipe* pipes);
+void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* pipes);
 #endif /* SERVER_FUNCTIONS_H */
