@@ -50,7 +50,7 @@ Line lines[WIN_EDITOR_MAX_Y];
  * @param argc quantidade de argumentos
  * @param argv array com os argumentos
  */
-void checkArgs(int argc, char** argv, char* pipeName, char* user) {
+int checkArgs(int argc, char** argv, char* pipeName, char* user) {
     int flag = 1;
     if (argc >= 3 && argc <= 5) {
         char *cmd;
@@ -70,8 +70,7 @@ void checkArgs(int argc, char** argv, char* pipeName, char* user) {
             }
         }
     }
-    if (flag)
-        loginSession(user);
+    return flag;
 }
 
 /**

@@ -8,7 +8,7 @@
 #endif
 
 
-void checkArgs(int argc, char** argv, char* pipeName, char* user);
+int checkArgs(int argc, char** argv, char* pipeName, char* user);
 void loginSession();
 void editor(char* user, EditorData * ed);
 void editMode(int y, int x, char* linha);

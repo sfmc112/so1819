@@ -17,6 +17,7 @@ void* startEditor();
 void* readFromMyPipe();
 void configureSignalBeforeLogin(int sinal);
 void configureSignalAfterLogin(int sinal);
+void exitServerShutdown();
 
 int runClient = 1;
 int fdMyPipe = -1, fdSv = -1;
@@ -27,25 +28,29 @@ EditorData ed;
 
 int main(int argc, char** argv) {
     configureSignalBeforeLogin(SIGINT);
+    configureSignalBeforeLogin(SIGPIPE);
 
     char tempPipe[PIPE_NAME_MAX];
-    
+
     strncpy(servPipe, MAIN_PIPE_SERVER, PIPE_NAME_MAX);
     strncpy(myPipe, PIPE_USER, PIPE_NAME_MAX);
     createNamedPipe(tempPipe, myPipe);
     strncpy(myPipe, tempPipe, PIPE_NAME_MAX);
 
-    checkArgs(argc, argv, servPipe, user);
-    
+    int flag = checkArgs(argc, argv, servPipe, user);
+
     fdSv = openNamedPipe(servPipe, O_WRONLY);
 
     if (fdSv == -1) {
         fprintf(stderr, "[ERRO]: O pipe principal do servidor, nao esta disponivel!\n");
         return EXIT_FAILURE;
     }
-    
+
+    if (flag)
+        loginSession(user);
+
     sendLoginToServer(user);
-    
+
     configureSignalAfterLogin(SIGINT);
 
     // Login Efetuado com sucesso
@@ -69,6 +74,8 @@ int main(int argc, char** argv) {
 void signalBehaviorBeforeLogin(int numSinal) {
     if (numSinal == SIGINT) {
         exitLoginFailure();
+    } else if (numSinal == SIGPIPE) {
+        exitServerShutdown();
     }
 }
 
@@ -187,23 +194,8 @@ void* readFromMyPipe() {
         nBytes = read(fdMyPipe, &msg, sizeof (msg));
         if (nBytes == sizeof (msg)) {
             switch (msg.code) {
-                    /*
-                    case LOGIN_FAILURE:
-                        printf("Login Falhou!\n");
-                        exitLoginFailure();
-                        break;
-                    case LOGIN_SUCCESS:
-                        fdSv = openNamedPipe(msg.intPipeName, O_WRONLY);
-                        if (fdSv == -1) {
-                            fprintf(stderr, "[ERRO]: Nao foi possivel abrir pipe interativo <%s> atribuido pelo servidor.\n", msg.intPipeName);
-                        } else {
-                            exitLoginFailure();
-                        }
-                        break;
-                     */
                 case SERVER_SHUTDOWN:
                     serverUp = 0;
-                    printf("O servidor foi desligado!\n");
                     break;
                 case EDITOR_UPDATE:
                     // TODO Terá que ser protegido por Mutex
@@ -216,6 +208,16 @@ void* readFromMyPipe() {
             }
         }
     }
+    exitServerShutdown();
+}
+
+void exitServerShutdown() {
+    endwin();
+    printf("O servidor foi desligado!\nA aplicação vai encerrar....\n");
+    if (fdMyPipe >= 0) closeNamedPipe(fdMyPipe);
+    if (fdSv >= 0) closeNamedPipe(fdSv);
+    deleteNamedPipe(myPipe);
+    exit(0);
 }
 
 void exitClient() {
@@ -240,5 +242,5 @@ void exitLoginFailure() {
     if (fdMyPipe >= 0) closeNamedPipe(fdMyPipe);
     if (fdSv >= 0) closeNamedPipe(fdSv);
     deleteNamedPipe(myPipe);
-    exit(0);
+    exit(1);
 }
