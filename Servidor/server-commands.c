@@ -7,7 +7,6 @@
 
 void cmdShutdown(ServerData* sd) {
     sd->runServer = 0;
-    //exitNormal();
 }
 
 void cmdSettings(ServerData sd, EditorData ed) {

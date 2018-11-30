@@ -183,8 +183,6 @@ void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* 
     closeNamedPipe(fdMainPipe);
     deleteNamedPipe(sd->mainPipe);
 
-    // TODO cada pipe interativo escreve para os seus clientes
-    // para os clientes serem avisados que o servidor encerrou
     ServerMsg msg;
     msg.code = SERVER_SHUTDOWN;
     for (i = 0; i < sd->maxUsers; i++) {

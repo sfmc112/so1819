@@ -334,7 +334,7 @@ void refreshCursor(int y, int x) {
 }
 
 /**
- * Função é responsável por mover todo o texto a partir de uma posição X para a
+ * Função é responsável por mover o texto a partir de uma posição X para a
  * direita.
  * @param linha linha de texto
  * @param x coluna

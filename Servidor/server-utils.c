@@ -19,10 +19,9 @@ void exitError(char* mensagem) {
     exit(1);
 }
 
-void exitNormal() {
-    //TODO Fazer outras coisas
-    exit(0);
-}
+//void exitNormal() {
+//    exit(0);
+//}
 
 /**
  * Função para colocar toda a string em letras minusculas.

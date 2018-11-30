@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 
     //A aplicaçao vai terminar...
     exitClient();
-    pthread_join(idMyPipe, NULL); //TODO receber e tratar do encerramento do servidor
+    pthread_join(idMyPipe, NULL); 
 
     return (EXIT_SUCCESS);
 }
@@ -132,7 +132,7 @@ void sendLoginToServer(char* user) {
 
     if (res == -1) {
         fprintf(stderr, "[ERRO]: Nao foi enviado o login para o servidor!\n");
-        return; // TODO TEM QUE SER ALTERADO
+        exitLoginFailure();
     }
 
     //fdMyPipe = openNamedPipe(myPipe, O_RDONLY);
@@ -214,8 +214,10 @@ void* readFromMyPipe() {
 void exitServerShutdown() {
     endwin();
     printf("O servidor foi desligado!\nA aplicação vai encerrar....\n");
-    if (fdMyPipe >= 0) closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0) closeNamedPipe(fdSv);
+    if (fdMyPipe >= 0)
+        closeNamedPipe(fdMyPipe);
+    if (fdSv >= 0)
+        closeNamedPipe(fdSv);
     deleteNamedPipe(myPipe);
     exit(0);
 }
@@ -231,16 +233,20 @@ void exitClient() {
 
     write(fdSv, &msg, sizeof (msg));
 
-    if (fdMyPipe >= 0) closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0) closeNamedPipe(fdSv);
+    if (fdMyPipe >= 0)
+        closeNamedPipe(fdMyPipe);
+    if (fdSv >= 0)
+        closeNamedPipe(fdSv);
     deleteNamedPipe(myPipe);
     exit(0);
 }
 
 void exitLoginFailure() {
     printf("A aplicação vai encerrar....\n");
-    if (fdMyPipe >= 0) closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0) closeNamedPipe(fdSv);
+    if (fdMyPipe >= 0)
+        closeNamedPipe(fdMyPipe);
+    if (fdSv >= 0)
+        closeNamedPipe(fdSv);
     deleteNamedPipe(myPipe);
     exit(1);
 }

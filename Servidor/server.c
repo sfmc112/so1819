@@ -10,6 +10,7 @@
 #include "server-utils.h"
 #include "server-users.h"
 #include <pthread.h>
+#include <limits.h>
 
 void* readCommands();
 void trataSinal(int numSinal);
@@ -39,6 +40,7 @@ int main(int argc, char** argv) {
     initializeInteractivePipes(interactivePipes);
 
     configuraSinal(SIGUSR1);
+    configuraSinal(SIGINT);
 
     createNamedPipesServer(interactivePipes);
     openNamedPipesServer(interactivePipes);
@@ -73,7 +75,7 @@ int main(int argc, char** argv) {
  * @return 1 se conseguiu e 0 caso contrário
  */
 void* readCommands() {
-    char comando[40]; //TODO alterar para define
+    char comando[MAX_INPUT];
     const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
     char* token = NULL;
     setbuf(stdout, NULL);
@@ -128,8 +130,8 @@ void* readCommands() {
  * @param numSinal Código do sinal.
  */
 void trataSinal(int numSinal) {
-    if (numSinal == SIGUSR1) {
-        exitNormal();
+    if (numSinal == SIGUSR1 || numSinal == SIGINT){
+        cmdShutdown(&sData);
     }
 }
 
@@ -271,7 +273,7 @@ void* readFromMainPipe(void* arg) {
  * @param arg
  * @return Ponteiro para void (void*)
  */
-void* readFromIntPipe(void* arg) { //TODO receber um InteractivePipe* em vez de int*
+void* readFromIntPipe(void* arg) {
     ClientMsg msg;
     int nBytes;
     InteractionPipe* pipeI = (InteractionPipe*) arg;
