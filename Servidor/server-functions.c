@@ -161,6 +161,21 @@ int getIntPipe(ServerData sd, InteractionPipe* pipes) {
     return menor;
 }
 
+void removeClient(char* username, ServerData* sd) {
+    // Vamos remover o cliente da lista de clientes ativos
+    // Fechar o FD do pipe do cliente
+    // Colocar o valid a 0
+    // Decrementar num_users do respectivo interative pipe
+    int i;
+    for (i = 0; i < sd->maxUsers; i++) {
+        if (sd->clients[i].valid && !strncmp(sd->clients[i].username, username, 9)){
+            sd->clients[i].valid=0;
+            closeNamedPipe(sd->clients[i].fdPipeClient);
+            break;
+        }
+    }
+}
+
 void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* pipes) {
     int i;
     char buffer[] = "close";

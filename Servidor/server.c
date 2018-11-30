@@ -26,7 +26,7 @@ void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
 EditorData eData;
 ServerData sData;
 
-int fdMainPipe;
+int fdMainPipe = -1;
 
 int main(int argc, char** argv) {
     if (verifySingleInstance() < 0)
@@ -56,10 +56,10 @@ int main(int argc, char** argv) {
 
     //Fechar o programa 
     pthread_join(idCommands, NULL);
-    
+
     //Fechar o programa
     printf("O servidor vai terminar!\n");
-    
+
     closeAndDeleteServerPipes(fdMainPipe, &sData, interactivePipes);
 
     joinThreads(idMainPipe, idIntPipes);
@@ -206,7 +206,7 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
 
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++) {
-        err = pthread_create((&intpipes[i]), NULL, readFromIntPipe, (void*) &(pipes[i].fd));
+        err = pthread_create((&intpipes[i]), NULL, readFromIntPipe, (void*) &(pipes[i]));
         if (err)
             printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
         else
@@ -267,16 +267,26 @@ void* readFromMainPipe(void* arg) {
 }
 
 /**
- * Função repsonsável por efetuar a leitura dos pipes interativos.
+ * Função repsonsável por efetuar a leitura dos pipes interativos. 
+ * @param arg
  * @return Ponteiro para void (void*)
  */
-
-void* readFromIntPipe(void* arg) {
+void* readFromIntPipe(void* arg) { //TODO receber um InteractivePipe* em vez de int*
     ClientMsg msg;
     int nBytes;
-    int *fd = (int*) arg;
+    InteractionPipe* pipeI = (InteractionPipe*) arg;
     while (sData.runServer) {
-        nBytes = read(*fd, &msg, sizeof (msg));
-
+        nBytes = read(pipeI->fd, &msg, sizeof (msg));
+        if (nBytes == sizeof (msg)) {
+            switch (msg.msgType) {
+                case CLIENT_SHUTDOWN:
+                    removeClient(msg.username, &sData);
+                    printf("O utilizador %s desconectou-se!\n", msg.username);
+                    pipeI->numUsers--;
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }

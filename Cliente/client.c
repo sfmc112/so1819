@@ -6,6 +6,8 @@
 #include "biblioteca.h"
 #include "client-functions.h"
 #include <pthread.h>
+#include <signal.h>
+#include <ncurses.h>
 
 void sendLoginToServer(char* user);
 void exitClient();
@@ -13,34 +15,38 @@ void exitLoginFailure();
 void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe);
 void* startEditor();
 void* readFromMyPipe();
+void configureSignalBeforeLogin(int sinal);
+void configureSignalAfterLogin(int sinal);
 
 int runClient = 1;
-int fdMyPipe, fdSv;
+int fdMyPipe = -1, fdSv = -1;
 char user[9];
 char myPipe[PIPE_NAME_MAX];
+char servPipe[PIPE_NAME_MAX];
 EditorData ed;
 
 int main(int argc, char** argv) {
-    fdSv = openNamedPipe(MAIN_PIPE_SERVER, O_WRONLY);
+    configureSignalBeforeLogin(SIGINT);
+
+    char tempPipe[PIPE_NAME_MAX];
+    
+    strncpy(servPipe, MAIN_PIPE_SERVER, PIPE_NAME_MAX);
+    strncpy(myPipe, PIPE_USER, PIPE_NAME_MAX);
+    createNamedPipe(tempPipe, myPipe);
+    strncpy(myPipe, tempPipe, PIPE_NAME_MAX);
+
+    checkArgs(argc, argv, servPipe, user);
+    
+    fdSv = openNamedPipe(servPipe, O_WRONLY);
 
     if (fdSv == -1) {
         fprintf(stderr, "[ERRO]: O pipe principal do servidor, nao esta disponivel!\n");
         return EXIT_FAILURE;
     }
-
-    char tempPipe[PIPE_NAME_MAX];
-
-    strncpy(myPipe, PIPE_USER, PIPE_NAME_MAX);
-
-    //configuraSinal(SIGUSR2);
-
-    checkArgs(argc, argv, myPipe, user);
-
-    createNamedPipe(tempPipe, myPipe);
-
-    strncpy(myPipe, tempPipe, PIPE_NAME_MAX);
-
+    
     sendLoginToServer(user);
+    
+    configureSignalAfterLogin(SIGINT);
 
     // Login Efetuado com sucesso
     pthread_t idEditor;
@@ -48,10 +54,10 @@ int main(int argc, char** argv) {
 
     createClientStartingThreads(&idEditor, &idMyPipe);
     pthread_join(idEditor, NULL);
-    
+
     //A aplicaçao vai terminar...
     exitClient();
-    pthread_join(idMyPipe, NULL);
+    pthread_join(idMyPipe, NULL); //TODO receber e tratar do encerramento do servidor
 
     return (EXIT_SUCCESS);
 }
@@ -60,37 +66,61 @@ int main(int argc, char** argv) {
  * Função responsável por executar o comportamento de numSinal.
  * @param numSinal Código do sinal.
  */
-
-/*
-void trataSinal(int numSinal) {
-    if (numSinal == SIGUSR2) {
-        closeNamedPipe(fdMyPipe);
-        closeNamedPipe(fdSv);
-        deleteNamedPipe(mainPipe);
-        exit(-1); // TODO ALTERAR
+void signalBehaviorBeforeLogin(int numSinal) {
+    if (numSinal == SIGINT) {
+        exitLoginFailure();
     }
 }
+
+/**
+ * Função responsável por redefinir o comportamento de sinal.
+ * @param sinal o sinal que o programa recebeu
  */
+void configureSignalBeforeLogin(int sinal) {
+    if (signal(sinal, signalBehaviorBeforeLogin) == SIG_ERR) {
+        perror("Erro a tratar sinal!");
+    }
+}
+
+/**
+ * Função responsável por executar o comportamento de numSinal.
+ * @param numSinal Código do sinal.
+ */
+void signalBehaviorAfterLogin(int numSinal) {
+    if (numSinal == SIGINT) {
+        exitClient();
+    }
+}
+
+/**
+ * Função responsável por redefinir o comportamento de sinal.
+ * @param sinal o sinal que o programa recebeu
+ */
+void configureSignalAfterLogin(int sinal) {
+    if (signal(sinal, signalBehaviorAfterLogin) == SIG_ERR) {
+        perror("Erro a tratar sinal!");
+    }
+}
 
 /**
  * Função responsável por enviar o username para o servidor. Fazendo com que o mesmo seja validado.
  * @param login username do cliente
  */
 void sendLoginToServer(char* user) {
-    
+
     //printf("Estou a abrir o meu pipe %s\n", myPipe);
-    fdMyPipe = openNamedPipe(myPipe, O_RDWR); 
-    
+    fdMyPipe = openNamedPipe(myPipe, O_RDWR);
+
     //printf("Ja abri o meu pipe\n");
-    
+
     LoginMsg login;
     strncpy(login.username, user, 9);
     strncpy(login.nomePipeCliente, myPipe, PIPE_MAX_NAME);
-    
+
     //printf("Estou a escrever no servidor\n");
 
     int res = write(fdSv, &login, sizeof (login));
-    
+
     //printf("Ja escrevi\n");
 
     if (res == -1) {
@@ -109,14 +139,14 @@ void sendLoginToServer(char* user) {
         fprintf(stderr, "[ERRO]: Nao foi possivel ler a resposta do servidor!\n");
         exitLoginFailure();
     }
-   
+
     if (msg.code == LOGIN_FAILURE) {
         printf("Login Falhou!\n");
         exitLoginFailure();
     }
-    
+
     closeNamedPipe(fdSv);
-    
+
     //Abrir pipe interativo
     fdSv = openNamedPipe(msg.intPipeName, O_WRONLY);
     ed = msg.ed;
@@ -157,20 +187,20 @@ void* readFromMyPipe() {
         nBytes = read(fdMyPipe, &msg, sizeof (msg));
         if (nBytes == sizeof (msg)) {
             switch (msg.code) {
-                /*
-                case LOGIN_FAILURE:
-                    printf("Login Falhou!\n");
-                    exitLoginFailure();
-                    break;
-                case LOGIN_SUCCESS:
-                    fdSv = openNamedPipe(msg.intPipeName, O_WRONLY);
-                    if (fdSv == -1) {
-                        fprintf(stderr, "[ERRO]: Nao foi possivel abrir pipe interativo <%s> atribuido pelo servidor.\n", msg.intPipeName);
-                    } else {
+                    /*
+                    case LOGIN_FAILURE:
+                        printf("Login Falhou!\n");
                         exitLoginFailure();
-                    }
-                    break;
-                */
+                        break;
+                    case LOGIN_SUCCESS:
+                        fdSv = openNamedPipe(msg.intPipeName, O_WRONLY);
+                        if (fdSv == -1) {
+                            fprintf(stderr, "[ERRO]: Nao foi possivel abrir pipe interativo <%s> atribuido pelo servidor.\n", msg.intPipeName);
+                        } else {
+                            exitLoginFailure();
+                        }
+                        break;
+                     */
                 case SERVER_SHUTDOWN:
                     serverUp = 0;
                     printf("O servidor foi desligado!\n");
@@ -189,6 +219,7 @@ void* readFromMyPipe() {
 }
 
 void exitClient() {
+    endwin();
     printf("A aplicação vai encerrar....\n");
 
     ClientMsg msg;
@@ -198,16 +229,16 @@ void exitClient() {
 
     write(fdSv, &msg, sizeof (msg));
 
-    closeNamedPipe(fdMyPipe);
-    closeNamedPipe(fdSv);
+    if (fdMyPipe >= 0) closeNamedPipe(fdMyPipe);
+    if (fdSv >= 0) closeNamedPipe(fdSv);
     deleteNamedPipe(myPipe);
     exit(0);
 }
 
 void exitLoginFailure() {
     printf("A aplicação vai encerrar....\n");
-    closeNamedPipe(fdMyPipe);
-    closeNamedPipe(fdSv);
+    if (fdMyPipe >= 0) closeNamedPipe(fdMyPipe);
+    if (fdSv >= 0) closeNamedPipe(fdSv);
     deleteNamedPipe(myPipe);
     exit(0);
 }
