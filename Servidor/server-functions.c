@@ -15,31 +15,35 @@
  * @param sd estrutura das configurações principais do servidor
  */
 void checkArgs(int argc, char** argv, ServerData* sd) {
-    if (argc == 3) {
+    if (argc >= 3 && argc <= 7) {
         char* cmd;
-        char temp[FILENAME_MAX];
         int res;
 
-        while ((res = getopt(argc, argv, "f:")) != -1) {
+        while ((res = getopt(argc, argv, "f:p:n:")) != -1) {
             switch (res) {
                 case 'f':
                     cmd = optarg;
+                    char temp[FILENAME_MAX];
                     strncpy(temp, cmd, FILENAME_MAX);
                     if (ifFileExists(cmd)) {
                         char* token = strtok(temp, ".");
                         token = strtok(NULL, ".");
                         if (strcmp(token, "db") != 0) {
                             printf("A extensão de ficheiro é inválida.\n");
-                            strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
                         } else
                             strncpy(sd->usersDB, cmd, MAX_SIZE_FILENAME);
-                    } else
-                        strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
+                    }
+                    break;
+                case 'p':
+                    cmd = optarg;
+                    strncpy(sd->mainPipe, cmd, PIPE_NAME_MAX);
+                    break;
+                case 'n':
+                    cmd = optarg;
+                    sscanf(cmd, "%d", &(sd->numInteractivePipes));
                     break;
             }
         }
-    } else {
-        strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
     }
 }
 
@@ -48,7 +52,7 @@ void checkArgs(int argc, char** argv, ServerData* sd) {
  * as variáveis de linha/coluna já foram atríbuídas assim como o nome do ficheiro
  * da base de dados dos utilizadores
  */
-void initializeMEDITLines(EditorData* ed) {
+void resetMEDITLines(EditorData* ed) {
     //Inicializar linhas
     int i, j;
 
@@ -57,6 +61,8 @@ void initializeMEDITLines(EditorData* ed) {
         for (j = 0; j < ed->col; j++)
             ed->lines[i].text[j] = ' ';
     }
+
+    strncpy(ed->fileName, "nenhum ficheiro carregado", MAX_FILE_NAME);
 }
 
 /**
@@ -69,7 +75,6 @@ void initializeMEDITLines(EditorData* ed) {
  */
 void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
     //Variáveis do Editor
-
     char *l, *c, *t, *mu;
     int lin, col, timeout, maxusers;
 
@@ -115,4 +120,83 @@ void getEnvironmentVariables(EditorData* ed, ServerData* sd) {
             sd->maxUsers = ed->lin;
     } else
         sd->maxUsers = DEFAULT_MAXUSERS;
+}
+
+/**
+ * Inicializa as estruturas do servidor: base de dados dos users, pipe principal e numero de pipes interativos.
+ * @param sd Ponteiro para a estrutura do servidor
+ */
+void initializeServerData(ServerData* sd) {
+    sd->runServer = 1;
+    strncpy(sd->mainPipe, MAIN_PIPE_SERVER, PIPE_NAME_MAX);
+    strncpy(sd->usersDB, USERSDEFAULT_DB, MAX_SIZE_FILENAME);
+    sd->numInteractivePipes = NUM_INTERACTIVE_PIPES;
+    for (int i = 0; i < DEFAULT_MAXUSERS; i++) {
+        sd->clients[i].valid = 0;
+    }
+}
+
+int getFirstAvailablePosition(ServerData sd) {
+    int j;
+    for (j = 0; j < DEFAULT_MAXUSERS && sd.clients[j].valid; j++)
+        ;
+    return j < DEFAULT_MAXUSERS ? j : -1;
+
+}
+
+void registerClient(char* username, ServerData* sData, int pos, int fdCli, int fdIntPipe) {
+    sData->clients[pos].valid = 1;
+    strncpy(sData->clients[pos].username, username, 9);
+    sData->clients[pos].fdPipeClient = fdCli;
+    sData->clients[pos].fdIntPipe = fdIntPipe;
+}
+
+int getIntPipe(ServerData sd, InteractionPipe* pipes) {
+    int i, menor = 0;
+    for (i = 1; i < sd.numInteractivePipes; i++)
+        if (pipes[i].numUsers < pipes[menor].numUsers) {
+            menor = i;
+        }
+    pipes[menor].numUsers++;
+    return menor;
+}
+
+void removeClient(char* username, ServerData* sd) {
+    // Vamos remover o cliente da lista de clientes ativos
+    // Fechar o FD do pipe do cliente
+    // Colocar o valid a 0
+    // Decrementar num_users do respectivo interative pipe
+    int i;
+    for (i = 0; i < sd->maxUsers; i++) {
+        if (sd->clients[i].valid && !strncmp(sd->clients[i].username, username, 9)){
+            sd->clients[i].valid=0;
+            closeNamedPipe(sd->clients[i].fdPipeClient);
+            break;
+        }
+    }
+}
+
+void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* pipes) {
+    int i;
+    char buffer[] = "close";
+    write(fdMainPipe, buffer, strlen(buffer));
+    closeNamedPipe(fdMainPipe);
+    deleteNamedPipe(sd->mainPipe);
+
+    ServerMsg msg;
+    msg.code = SERVER_SHUTDOWN;
+    for (i = 0; i < sd->maxUsers; i++) {
+        if (sd->clients[i].valid == 1) {
+            printf("Vou desconectar o cliente %s!\n", sd->clients[i].username);
+            write(sd->clients[i].fdPipeClient, &msg, sizeof (msg));
+            closeNamedPipe(sd->clients[i].fdPipeClient);
+            printf("O cliente %s foi desconectado!\n", sd->clients[i].username);
+        }
+    }
+
+    for (i = 0; i < sd->numInteractivePipes; i++) {
+        write(pipes[i].fd, buffer, strlen(buffer));
+        closeNamedPipe(pipes[i].fd);
+        deleteNamedPipe(pipes[i].pipeName);
+    }
 }

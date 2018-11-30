@@ -55,3 +55,13 @@ dkms.conf
 /.project
 /Servidor/build/
 /Servidor/dist/
+/Testes/PipesV1/Patrao/dist/
+/Testes/PipesV1/Patrao/build/
+/Testes/PipesV1/Empregado/dist/
+/Testes/PipesV1/Empregado/build/
+/Biblioteca/build/
+/Biblioteca/dist/
+/Dicionario/dist/
+/Dicionario/build/
+/Teste/build/
+/Teste/dist/

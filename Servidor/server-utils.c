@@ -3,12 +3,14 @@
 //#include <signal.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /**
  * Função que termina a aplicação com erro.
  * @param mensagem mensagem de erro
  */
-void errorMessage(char* message){
+void errorMessage(char* message) {
     perror(message);
 }
 
@@ -17,10 +19,9 @@ void exitError(char* mensagem) {
     exit(1);
 }
 
-void exitNormal(){
-    //Fazer outras coisas
-    exit(0);
-}
+//void exitNormal() {
+//    exit(0);
+//}
 
 /**
  * Função para colocar toda a string em letras minusculas.
@@ -50,7 +51,7 @@ void toUpper(char* buffer) {
 int ifFileExists(char* nomeFicheiro) {
     FILE* f;
     f = fopen(nomeFicheiro, "r");
-    if (f == NULL){
+    if (f == NULL) {
         errorMessage("Ficheiro nao existe!");
         return 0;
     }
@@ -69,5 +70,9 @@ char* getSignalName(int sig) {
 
     free(str);
 }
-*/
+ */
+
+int verifySingleInstance() {
+    return open("/tmp/unique.txt", O_RDONLY | O_EXCL | O_CREAT);
+}
 

@@ -5,8 +5,8 @@
 #include "server-defaults.h"
 #include "server-commands.h"
 
-void cmdShutdown() {
-    exitNormal();
+void cmdShutdown(ServerData* sd) {
+    sd->runServer = 0;
 }
 
 void cmdSettings(ServerData sd, EditorData ed) {
@@ -14,7 +14,11 @@ void cmdSettings(ServerData sd, EditorData ed) {
     printf("Numero de linhas do editor: %d\n", ed.lin);
     printf("Numero de colunas do editor: %d\n", ed.col);
     printf("Nome da base de dados de usernames: %s\n", sd.usersDB);
-    printf("Numero maximo de utilizadores ativos: %d\n\n", sd.maxUsers);
+    printf("Numero maximo de utilizadores ativos: %d\n", sd.maxUsers);
+    printf("Numero de named pipes de interacao: %d\n", sd.numInteractivePipes);
+    printf("Nome do named pipe principal: %s\n", sd.mainPipe);
+    printf("Nome do ficheiro em edicao: %s\n", ed.fileName);
+    printf("Timeout por inatividade: %d\n\n", ed.timeout);
 }
 
 int cmdLoad() {
