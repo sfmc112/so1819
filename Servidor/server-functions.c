@@ -61,7 +61,7 @@ void resetMEDITLines(EditorData* ed) {
         for (j = 0; j < ed->col; j++)
             ed->lines[i].text[j] = ' ';
     }
-    
+
     strncpy(ed->fileName, "nenhum ficheiro carregado", MAX_FILE_NAME);
 }
 
@@ -167,10 +167,20 @@ void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* 
     write(fdMainPipe, buffer, strlen(buffer));
     closeNamedPipe(fdMainPipe);
     deleteNamedPipe(sd->mainPipe);
-    
+
     // TODO cada pipe interativo escreve para os seus clientes
     // para os clientes serem avisados que o servidor encerrou
-    
+    ServerMsg msg;
+    msg.code = SERVER_SHUTDOWN;
+    for (i = 0; i < sd->maxUsers; i++) {
+        if (sd->clients[i].valid == 1) {
+            printf("Vou desconectar o cliente %s!\n", sd->clients[i].username);
+            write(sd->clients[i].fdPipeClient, &msg, sizeof (msg));
+            closeNamedPipe(sd->clients[i].fdPipeClient);
+            printf("O cliente %s foi desconectado!\n", sd->clients[i].username);
+        }
+    }
+
     for (i = 0; i < sd->numInteractivePipes; i++) {
         write(pipes[i].fd, buffer, strlen(buffer));
         closeNamedPipe(pipes[i].fd);

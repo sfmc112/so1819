@@ -173,6 +173,7 @@ void* readFromMyPipe() {
                 */
                 case SERVER_SHUTDOWN:
                     serverUp = 0;
+                    printf("O servidor foi desligado!\n");
                     break;
                 case EDITOR_UPDATE:
                     // TODO Terá que ser protegido por Mutex
