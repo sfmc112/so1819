@@ -25,7 +25,6 @@ void* readFromMainPipe(void* arg);
 void* readFromIntPipe(void* arg);
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
 
-void startAspell(int* fdWrite, int* fdRead);
 
 EditorData eData;
 ServerData sData;
@@ -51,7 +50,7 @@ int main(int argc, char** argv) {
     openNamedPipesServer(interactivePipes);
 
     getEnvironmentVariables(&eData, &sData);
-    
+
     startAspell(&fdToAspell, &fdFromAspell);
 
     resetMEDITLines(&eData);
@@ -61,7 +60,22 @@ int main(int argc, char** argv) {
     pthread_t idMainPipe;
     pthread_t idIntPipes[sData.numInteractivePipes];
 
+
+    if (spellCheckSentence("Bananona", fdToAspell, fdFromAspell) == 0) {
+        puts("Esta correto");
+    }
+    if (spellCheckSentence("Ricardo", fdToAspell, fdFromAspell) == 0) {
+        puts("Esta correto");
+    }
+    if (spellCheckSentence("Sarah", fdToAspell, fdFromAspell) == 0) {
+        puts("Esta correto");
+    }
+    if (spellCheckSentence("frase do dia", fdToAspell, fdFromAspell) == 0) {
+        puts("Esta correto");
+    }
+
     createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
+
 
     //Fechar o programa 
     pthread_join(idCommands, NULL);
@@ -70,6 +84,8 @@ int main(int argc, char** argv) {
     printf("O servidor vai terminar!\n");
 
     closeAndDeleteServerPipes(fdMainPipe, &sData, interactivePipes);
+
+    close(fdToAspell); //vai fazer terminar o Aspell
 
     joinThreads(idMainPipe, idIntPipes);
 
@@ -137,7 +153,7 @@ void* readCommands() {
  * @param numSinal Código do sinal.
  */
 void trataSinal(int numSinal) {
-    if (numSinal == SIGUSR1 || numSinal == SIGINT){
+    if (numSinal == SIGUSR1 || numSinal == SIGINT) {
         cmdShutdown(&sData);
     }
 }
@@ -156,7 +172,7 @@ void configuraSinal(int sinal) {
  * Função responsável por criar os named pipes do servidor.
  * @param pipes Array de Pipes Interativo
  */
-void createNamedPipesServer(InteractionPipe* pipes) {
+void createNamedPipesServer(InteractionPipe * pipes) {
     char pipeName[PIPE_NAME_MAX];
     createServerNamedPipe(sData.mainPipe);
 
@@ -172,7 +188,7 @@ void createNamedPipesServer(InteractionPipe* pipes) {
  * Função responsável por abrir os named pipes do servidor.
  * @param pipes Array de Pipes Interativo
  */
-void openNamedPipesServer(InteractionPipe* pipes) {
+void openNamedPipesServer(InteractionPipe * pipes) {
     fdMainPipe = openNamedPipe(sData.mainPipe, O_RDWR);
 
     for (int i = 0; i < sData.numInteractivePipes; i++) {
@@ -184,7 +200,7 @@ void openNamedPipesServer(InteractionPipe* pipes) {
  * Função responsável por inicializar o número de utilizadores em cada pipe interativo a 0.
  * @param pipes Array de Pipes Interativo
  */
-void initializeInteractivePipes(InteractionPipe* pipes) {
+void initializeInteractivePipes(InteractionPipe * pipes) {
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++) {
         pipes[i].numUsers = 0;
@@ -199,7 +215,7 @@ void initializeInteractivePipes(InteractionPipe* pipes) {
  * @param mainpipe Thread para ler do pipe principal do servidor
  * @param intpipes Array dos Pipes Interativos
  */
-void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes) {
+void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe * pipes) {
     int err;
     err = pthread_create(commands, NULL, readCommands, NULL);
     if (err)

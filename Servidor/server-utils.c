@@ -88,31 +88,10 @@ void startAspell(int* fdWrite, int* fdRead) {
 
         int bytesRead;
         char resp[4096];
-        int numPalavras;
-        int numAstericos;
-        char pal1[50] = "palavra";
-        char pal2[50] = "sarah";
 
-        bytesRead = read(fdPipeFromAspell[0], resp, 4096);
+        bytesRead = read(*fdRead, resp, 4096);
         resp[bytesRead - 1] = 0;
         printf("Aspell: <%s>\n", resp);
-
-        numPalavras = contaPalavras(pal1);
-        //msg[strlen(msg) - 1] = '\0';
-        write(fdPipeToAspell[1], pal1, strlen(pal1));
-        bytesRead = read(fdPipeFromAspell[0], resp, 4096);
-        resp[bytesRead - 1] = 0;
-        printf("\nAspell:\n%s\n\n", resp);
-        pal2[strlen(pal2) - 1] = '\0';
-        //TODO ACABAR ISTO
-
-        numAstericos = contaAsteriscos(resp);
-
-        if (numPalavras == numAstericos)
-            fprintf(stdout, "A frase esta correta\n");
-        else
-            fprintf(stdout, "Houve um erro na frase!\n");
-
     }
 }
 
@@ -122,10 +101,10 @@ int contaPalavras(char * msg) {
     char* token;
     int conta = 0;
 
-    token = strtok(tempMsg, " .,;:-_?!");
+    token = strtok(tempMsg, " .,;:_?!");
     conta++;
 
-    while ((token = strtok(NULL, " .,;:-_?!")) != NULL)
+    while ((token = strtok(NULL, " .,;:_?!")) != NULL)
         conta++;
 
     return conta;
@@ -133,7 +112,7 @@ int contaPalavras(char * msg) {
 
 int contaAsteriscos(char* msg) {
     int i = 0, conta = 0;
-    //msg[strlen(msg)] = '\0';
+
     while (msg[i] != '\0') {
         if (msg[i] == '*')
             conta++;
@@ -142,4 +121,74 @@ int contaAsteriscos(char* msg) {
 
     return conta;
 }
+
+int spellCheck(char* msg, int fdWrite, int fdRead) {
+
+    int bytesRead;
+    char resp[4096];
+    int numPalavras;
+    int numAstericos;
+
+    // PRIMEIRA PALAVRA
+    numPalavras = contaPalavras(msg);
+
+
+    printf("Escrevi %d bytes\n", write(fdWrite, msg, strlen(msg)));
+    bytesRead = read(fdRead, resp, 4096);
+    printf("Li %d bytes\n", bytesRead);
+    resp[bytesRead - 1] = 0;
+    printf("\nAspell: <%s>\n\n", resp);
+
+    //msg[strlen(msg) - 1] = '\0';
+
+    numAstericos = contaAsteriscos(resp);
+
+    if (numPalavras == numAstericos)
+        fprintf(stdout, "A frase <%s> esta correta\n", msg);
+    else
+        fprintf(stdout, "Houve um erro na frase <%s>!\n", msg);
+
+    return numPalavras == numAstericos;
+}
+
+/**
+ * 
+ * @param msg
+ * @return 0 se a frase está correta, 1 caso contrário
+ */
+int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
+    int bytesRead;
+    char resp[4096];
+    char tempMsg[1024];
+    strncpy(tempMsg, msg, 1024);
+    char pal[50];
+    char* token;
+
+    token = strtok(tempMsg, " .,;:_?!");
+
+    do {
+        strncpy(pal, token, 50);
+        pal[strlen(pal)] = '\n';
+        //pal[strlen(pal)] = '\0';
+        write(fdWrite, pal, strlen(pal));
+        bytesRead = read(fdRead, resp, 4096);
+        printf("Li %d bytes\n", bytesRead);
+        resp[bytesRead - 1] = 0;
+        printf("\nAspell: <%s>\n\n", resp);
+
+        if (resp[0] != '*')
+            return 1;
+
+
+        /*
+                write(fdWrite, "\n", strlen("\n"));
+                read(fdRead, resp, 4096);
+         */
+    } while ((token = strtok(NULL, " .,;:_?!")) != NULL);
+
+    return 0;
+}
+
+
+
 

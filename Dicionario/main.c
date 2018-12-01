@@ -20,6 +20,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 
 int contaPalavras(char * msg);
 int contaAsteriscos(char* msg);
@@ -45,19 +46,19 @@ int main(int argc, char** argv) {
         close(fdPipeToAspell[1]);
         dup2(fdPipeFromAspell[1], STDOUT_FILENO);
         close(fdPipeFromAspell[0]);
-        execlp("aspell", "aspell", "-a", "-d", "pt_PT", NULL);
+        execlp("aspell", "aspell", "-a", "-l", "pt_PT", NULL);
     } else {
         close(fdPipeToAspell[0]);
         close(fdPipeFromAspell[1]);
 
         char msg[1024];
         int bytesRead;
-        char resp[4096];
+        char resp[512];
         int numPalavras;
         int numAstericos;
         int i;
 
-        bytesRead = read(fdPipeFromAspell[0], resp, 4096);
+        bytesRead = read(fdPipeFromAspell[0], resp, 512);
         resp[bytesRead - 1] = 0;
         printf("Aspell: <%s>\n", resp);
 
@@ -69,7 +70,7 @@ int main(int argc, char** argv) {
                 break;
             }
             write(fdPipeToAspell[1], msg, strlen(msg));
-            bytesRead = read(fdPipeFromAspell[0], resp, 4096);
+            bytesRead = read(fdPipeFromAspell[0], resp, 512);
             resp[bytesRead - 1] = 0;
             printf("\nAspell: <%s>\n\n", resp);
             //msg[strlen(msg) - 1] = '\0';

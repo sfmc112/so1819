@@ -88,7 +88,7 @@ int openNamedPipe(char* pathname, int mode) {
         return fatalErrorMsg("Nao consegui abrir o pipe para escrita", "openNamedPipe()");
     }
 
-    printf("O pipe <%s> foi aberto com sucesso!\n", pathname);
+    printf("\nO pipe <%s> foi aberto com sucesso!\n", pathname);
 
     return fd;
 }
@@ -116,7 +116,7 @@ void writeServerMsg(int fd, ServerMsg* msg){
  * @return erro grave (1)
  */
 int fatalErrorMsg(char* descricao, char* funcao) {
-    fprintf(stderr, "[ERRO]: %s\n", descricao);
+    fprintf(stderr, "\n[ERRO]: %s\n", descricao);
     perror(funcao);
     return -1;
 }

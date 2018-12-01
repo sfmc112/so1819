@@ -187,10 +187,10 @@ void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* 
     msg.code = SERVER_SHUTDOWN;
     for (i = 0; i < sd->maxUsers; i++) {
         if (sd->clients[i].valid == 1) {
-            printf("Vou desconectar o cliente %s!\n", sd->clients[i].username);
+            printf("\nVou desconectar o cliente %s!\n", sd->clients[i].username);
             write(sd->clients[i].fdPipeClient, &msg, sizeof (msg));
             closeNamedPipe(sd->clients[i].fdPipeClient);
-            printf("O cliente %s foi desconectado!\n", sd->clients[i].username);
+            printf("\nO cliente %s foi desconectado!\n", sd->clients[i].username);
         }
     }
 
