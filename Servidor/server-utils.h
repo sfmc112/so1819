@@ -7,4 +7,5 @@ void toUpper(char* buffer);
 int ifFileExists(char* nomeFicheiro);
 //char* getSignalName(int signal, char* str);
 int verifySingleInstance();
+void startAspell(int* fdWrite, int* fdRead);
 #endif /* UTILS_H */

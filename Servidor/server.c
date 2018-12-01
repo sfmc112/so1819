@@ -10,7 +10,8 @@
 #include "server-utils.h"
 #include "server-users.h"
 #include <pthread.h>
-#include <limits.h>
+
+#define MAX_INPUT 255
 
 void* readCommands();
 void trataSinal(int numSinal);
@@ -24,8 +25,12 @@ void* readFromMainPipe(void* arg);
 void* readFromIntPipe(void* arg);
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
 
+void startAspell(int* fdWrite, int* fdRead);
+
 EditorData eData;
 ServerData sData;
+int fdToAspell = -1;
+int fdFromAspell = -1;
 
 int fdMainPipe = -1;
 
@@ -46,6 +51,8 @@ int main(int argc, char** argv) {
     openNamedPipesServer(interactivePipes);
 
     getEnvironmentVariables(&eData, &sData);
+    
+    startAspell(&fdToAspell, &fdFromAspell);
 
     resetMEDITLines(&eData);
 
@@ -285,6 +292,9 @@ void* readFromIntPipe(void* arg) {
                     removeClient(msg.username, &sData);
                     printf("O utilizador %s desconectou-se!\n", msg.username);
                     pipeI->numUsers--;
+                    break;
+                case K_ENTER:
+                    //Ask aspell
                     break;
                 default:
                     break;
