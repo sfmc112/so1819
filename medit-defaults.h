@@ -44,21 +44,28 @@ typedef struct _line {
 typedef struct _editordata EditorData;
 
 struct _editordata {
-    char fileName[MAX_FILE_NAME]; //nome do ficheiro de texto
-    int lin; // Número de linhas que o editor possui
-    int col; // Comprimento de uma linha de texto
-    int timeout; //tempo de inatividade após o qual uma linha é libertada
-    Line lines[DEFAULT_MAXLINES]; // As linhas com o texto
+    // Nome do ficheiro de texto
+    char fileName[MAX_FILE_NAME];
+    // Número de linhas que o editor possui
+    int lin;
+    // Comprimento de uma linha de texto
+    int col;
+    // Tempo de inatividade após o qual uma linha é libertada
+    int timeout;
+    // As linhas com o texto
+    Line lines[DEFAULT_MAXLINES];
 };
 
 typedef struct _servermessage {
-    EditorData ed;
-    int code; // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_UPDATE 3
+    // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_UPDATE 3
+    int code;
     char intPipeName[PIPE_MAX_NAME];
+    EditorData ed;
 } ServerMsg;
 
 typedef struct _clientmessage {
-    int msgType; // Tipo de mensagem:\n\n - MOVE_UP 100\n - MOVE_DOWN 101\n - MOVE_LEFT 102\n - MOVE_RIGHT 103\n - K_ENTER 104\n - K_ESC 105\n - K_DEL 106\n - K_BACKSPACE 107\n - K_CHAR 108\n - CLIENT_SHUTDOWN 109
+    // Tipo de mensagem:\n\n - MOVE_UP 100\n - MOVE_DOWN 101\n - MOVE_LEFT 102\n - MOVE_RIGHT 103\n - K_ENTER 104\n - K_ESC 105\n - K_DEL 106\n - K_BACKSPACE 107\n - K_CHAR 108\n - CLIENT_SHUTDOWN 109
+    int msgType;
     char letra;
     char username[9];
 } ClientMsg;
