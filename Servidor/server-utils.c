@@ -159,31 +159,35 @@ int spellCheck(char* msg, int fdWrite, int fdRead) {
 int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
     int bytesRead;
     char resp[4096];
+    char resp2[4096];
     char tempMsg[1024];
     strncpy(tempMsg, msg, 1024);
-    char pal[50];
+    char pal[51];
     char* token;
 
     token = strtok(tempMsg, " .,;:_?!");
 
     do {
-        strncpy(pal, token, 50);
-        pal[strlen(pal)] = '\n';
+        strncpy(pal, token, 49);
+        pal[50] = '\0';
+
+        //pal[strlen(pal)] = '\n';
         //pal[strlen(pal)] = '\0';
         write(fdWrite, pal, strlen(pal));
-        bytesRead = read(fdRead, resp, 4096);
-        printf("Li %d bytes\n", bytesRead);
-        resp[bytesRead - 1] = 0;
-        printf("\nAspell: <%s>\n\n", resp);
+        write(fdWrite, "\n", 1);
+        //printf("Escrevi: <%s\n>", pal);
+        bytesRead = read(fdRead, resp, 4095);
+        //printf("Li %d bytes\n", bytesRead);
+        resp[bytesRead] = '\0';
+        //printf("\nAspell: <%s>\n", resp);
 
+        bytesRead = read(fdRead, resp2, 4095);
+        //printf("Li %d bytes\n", bytesRead);
+        resp2[bytesRead] = '\0';
+        //printf("\nAspell: <%s>\n", resp);
         if (resp[0] != '*')
             return 1;
 
-
-        /*
-                write(fdWrite, "\n", strlen("\n"));
-                read(fdRead, resp, 4096);
-         */
     } while ((token = strtok(NULL, " .,;:_?!")) != NULL);
 
     return 0;

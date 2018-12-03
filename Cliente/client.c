@@ -75,6 +75,7 @@ void signalBehaviorBeforeLogin(int numSinal) {
     if (numSinal == SIGINT) {
         exitLoginFailure();
     } else if (numSinal == SIGPIPE) {
+        printf("Recebi SIGPIPE\n");
         exitServerShutdown();
     }
 }

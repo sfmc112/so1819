@@ -61,17 +61,25 @@ int main(int argc, char** argv) {
     pthread_t idIntPipes[sData.numInteractivePipes];
 
 
-    if (spellCheckSentence("Bananona", fdToAspell, fdFromAspell) == 0) {
+    if (spellCheckSentence("iahtnaçsd", fdToAspell, fdFromAspell) == 0) {
         puts("Esta correto");
+    }else{
+        puts("Esta incorreto");
     }
     if (spellCheckSentence("Ricardo", fdToAspell, fdFromAspell) == 0) {
         puts("Esta correto");
+    }else{
+        puts("Esta incorreto");
     }
     if (spellCheckSentence("Sarah", fdToAspell, fdFromAspell) == 0) {
         puts("Esta correto");
+    }else{
+        puts("Esta incorreto");
     }
     if (spellCheckSentence("frase do dia", fdToAspell, fdFromAspell) == 0) {
         puts("Esta correto");
+    }else{
+        puts("Esta incorreto");
     }
 
     createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
