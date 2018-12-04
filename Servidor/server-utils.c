@@ -62,10 +62,19 @@ int ifFileExists(char* nomeFicheiro) {
     return 1;
 }
 
+/**
+ * Função responsável por verificar se já existe algum servidor em execução.
+ * @return < 0 caso já exista, > 0 caso contrário
+ */
 int verifySingleInstance() {
     return open("/tmp/unique.txt", O_RDONLY | O_EXCL | O_CREAT);
 }
 
+/**
+ * Função responsável por iniciar o Aspell.
+ * @param fdWrite Descritor para escrita
+ * @param fdRead Descritor para leitura
+ */
 void startAspell(int* fdWrite, int* fdRead) {
     int fdPipeToAspell[2];
     int fdPipeFromAspell[2];
@@ -95,6 +104,11 @@ void startAspell(int* fdWrite, int* fdRead) {
     }
 }
 
+/**
+ * Função responsável por contar palavras de um array de caractéres
+ * @param msg mensagem
+ * @return numero de palavras
+ */
 int contaPalavras(char * msg) {
     char tempMsg[1024];
     strncpy(tempMsg, msg, 1024);
@@ -110,6 +124,11 @@ int contaPalavras(char * msg) {
     return conta;
 }
 
+/**
+ * Função responsável por contar asteriscos numa mensagem.
+ * @param msg mensagem
+ * @return número de asteriscos
+ */
 int contaAsteriscos(char* msg) {
     int i = 0, conta = 0;
 
@@ -122,6 +141,13 @@ int contaAsteriscos(char* msg) {
     return conta;
 }
 
+/**
+ * Função responsável por verificar se todas as palavras estão corretas.
+ * @param msg mensagem
+ * @param fdWrite descritor para escrita
+ * @param fdRead descritor para leitura
+ * @return 0 caso nao estejam todas corretas, !0 caso contrário
+ */
 int spellCheck(char* msg, int fdWrite, int fdRead) {
 
     int bytesRead;
@@ -152,8 +178,8 @@ int spellCheck(char* msg, int fdWrite, int fdRead) {
 }
 
 /**
- * 
- * @param msg
+ * Função responsável por enviar uma mensagem para o Aspell.
+ * @param msg mensagem
  * @return 0 se a frase está correta, 1 caso contrário
  */
 int spellCheckSentence(char * msg, int fdWrite, int fdRead) {

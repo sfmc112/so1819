@@ -154,6 +154,7 @@ void* readCommands() {
                 puts("Comando invalido!");
         }
     }
+    return NULL;
 }
 
 /**
@@ -297,6 +298,7 @@ void* readFromMainPipe(void* arg) {
             write(fdCli, &msg, sizeof (msg));
         }
     }
+    return NULL;
 }
 
 /**
@@ -325,4 +327,5 @@ void* readFromIntPipe(void* arg) {
             }
         }
     }
+    return NULL;
 }

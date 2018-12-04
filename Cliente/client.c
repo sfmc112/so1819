@@ -180,12 +180,21 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
         printf("\n A thread foi criada!\n");
 }
 
+/**
+ * Função responsável por iniciar o editor.
+ * @return NULL
+ */
 void* startEditor() {
     //TODO mutex
     editor(user, &ed);
     runClient = 0;
+    return NULL;
 }
 
+/**
+ * Função responsável por ler do pipe principal do servidor.
+ * @return NULL
+ */
 void* readFromMyPipe() {
     int nBytes;
     ServerMsg msg;
@@ -210,8 +219,12 @@ void* readFromMyPipe() {
         }
     }
     exitServerShutdown();
+    return NULL;
 }
 
+/**
+ * Função responsável por fechar a sessão porque o servidor foi desligado, mas fechando primeiramente os pipes e apagando o seu próprio pipe.
+ */
 void exitServerShutdown() {
     endwin();
     printf("O servidor foi desligado!\nA aplicação vai encerrar....\n");
@@ -223,6 +236,9 @@ void exitServerShutdown() {
     exit(0);
 }
 
+/**
+ * Função responsável por terminar a sessão, avisando o servidor previamente. Fecha os pipes e apaga o pipe principal.
+ */
 void exitClient() {
     endwin();
     printf("A aplicação vai encerrar....\n");
@@ -242,6 +258,9 @@ void exitClient() {
     exit(0);
 }
 
+/**
+ * Função responsável por terminar a sessão, fechando os pipes abertos e apagando o próprio pipe.
+ */
 void exitLoginFailure() {
     printf("A aplicação vai encerrar....\n");
     if (fdMyPipe >= 0)

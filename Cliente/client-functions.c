@@ -84,7 +84,7 @@ void loginSession(char* user) {
 /**
  * Função responsável por tudo acerca do editor.
  */
-void editor(char* user, EditorData * ed) { /*receber nome do utilizador e escreve-lo só em modo de edição*/
+void editor(char* user, EditorData * ed) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
     initscr();
     start_color();
     clear();
