@@ -25,6 +25,8 @@ char user[9];
 char myPipe[PIPE_NAME_MAX];
 char servPipe[PIPE_NAME_MAX];
 EditorData ed;
+pthread_t idEditor;
+pthread_t idMyPipe;
 
 int main(int argc, char** argv) {
     configureSignalBeforeLogin(SIGINT);
@@ -39,7 +41,7 @@ int main(int argc, char** argv) {
     strncpy(myPipe, tempPipe, PIPE_NAME_MAX);
 
     int flag = checkArgs(argc, argv, servPipe, user);
-puts("[CLIENTE] Vou abrir o pipe principal!");
+    puts("[CLIENTE] Vou abrir o pipe principal!");
     fdSv = openNamedPipe(servPipe, O_WRONLY);
 
     if (fdSv == -1) {
@@ -55,19 +57,9 @@ puts("[CLIENTE] Vou abrir o pipe principal!");
     configureSignalAfterLogin(SIGINT);
 
     // Login Efetuado com sucesso
-    pthread_t idEditor;
-    pthread_t idMyPipe;
-
     createClientStartingThreads(&idEditor, &idMyPipe);
-    puts("[CLIENTE] A thread responsavel pelo editor deu join");
-    pthread_join(idEditor, NULL);
-
     //A aplicaçao vai terminar...
     exitClient();
-    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal deu join");
-    pthread_join(idMyPipe, NULL); 
-
-    return (EXIT_SUCCESS);
 }
 
 /**
@@ -99,6 +91,8 @@ void configureSignalBeforeLogin(int sinal) {
  */
 void signalBehaviorAfterLogin(int numSinal) {
     if (numSinal == SIGINT) {
+        pthread_cancel(idEditor);
+        puts("[CLIENTE] A thread responsavel pelo editor terminou!");
         exitClient();
     }
 }
@@ -221,7 +215,8 @@ void* readFromMyPipe() {
             }
         }
     }
-    exitServerShutdown();
+    if (!serverUp)
+        exitServerShutdown();
     return NULL;
 }
 
@@ -230,11 +225,24 @@ void* readFromMyPipe() {
  */
 void exitServerShutdown() {
     endwin();
+    pthread_cancel(idEditor);
+    puts("[CLIENTE] A thread responsavel pelo editor terminou!");
+
     printf("[CLIENTE] O servidor foi desligado!\n[CLIENTE] A aplicação vai encerrar....\n");
-    if (fdMyPipe >= 0)
+
+    pthread_join(idMyPipe, NULL);
+    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal terminou!");
+
+    if (fdMyPipe >= 0) {
+        puts("[CLIENTE] Vou fechar o meu pipe!");
         closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0)
+    }
+
+    if (fdSv >= 0) {
+        puts("[CLIENTE] Vou fechar o pipe do servidor!");
         closeNamedPipe(fdSv);
+    }
+    puts("[CLIENTE] Vou apagar o meu pipe!");
     deleteNamedPipe(myPipe);
     exit(0);
 }
@@ -243,8 +251,11 @@ void exitServerShutdown() {
  * Função responsável por terminar a sessão, avisando o servidor previamente. Fecha os pipes e apaga o pipe principal.
  */
 void exitClient() {
-    endwin();
+
     printf("[CLIENTE] A aplicação vai encerrar....\n");
+    pthread_join(idEditor, NULL);
+    puts("[CLIENTE] A thread responsavel pelo editor terminou!");
+    endwin();
 
     ClientMsg msg;
 
@@ -253,11 +264,23 @@ void exitClient() {
 
     write(fdSv, &msg, sizeof (msg));
 
-    if (fdMyPipe >= 0)
+    runClient = 0;
+    write(fdMyPipe, "\n", 1);
+
+    pthread_join(idMyPipe, NULL);
+    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal terminou!");
+
+    if (fdMyPipe >= 0) {
+        puts("[CLIENTE] Vou fechar o meu pipe!");
         closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0)
+    }
+    if (fdSv >= 0) {
+        puts("[CLIENTE] Vou fechar o pipe do servidor!");
         closeNamedPipe(fdSv);
+    }
+    puts("[CLIENTE] Vou apagar o meu pipe!");
     deleteNamedPipe(myPipe);
+
     exit(0);
 }
 
@@ -266,10 +289,15 @@ void exitClient() {
  */
 void exitLoginFailure() {
     printf("[CLIENTE] A aplicação vai encerrar....\n");
-    if (fdMyPipe >= 0)
+    if (fdMyPipe >= 0) {
+        puts("[CLIENTE] Vou fechar o meu pipe!");
         closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0)
+    }
+    if (fdSv >= 0) {
+        puts("[CLIENTE] Vou fechar o pipe do servidor!");
         closeNamedPipe(fdSv);
+    }
+    puts("[CLIENTE] Vou apagar o meu pipe!");
     deleteNamedPipe(myPipe);
     exit(1);
 }

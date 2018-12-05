@@ -188,8 +188,8 @@ int getIntPipe(ServerData sd, InteractionPipe* pipes) {
 void removeClient(char* username, ServerData* sd) {
     int i;
     for (i = 0; i < sd->maxUsers; i++) {
-        if (sd->clients[i].valid && !strncmp(sd->clients[i].username, username, 9)){
-            sd->clients[i].valid=0;
+        if (sd->clients[i].valid && !strncmp(sd->clients[i].username, username, 9)) {
+            sd->clients[i].valid = 0;
             closeNamedPipe(sd->clients[i].fdPipeClient);
             break;
         }
@@ -206,6 +206,7 @@ void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* 
     int i;
     char buffer[] = "close";
     write(fdMainPipe, buffer, strlen(buffer));
+    puts("[SERVIDOR] Vou fechar e apagar o pipe principal!");
     closeNamedPipe(fdMainPipe);
     deleteNamedPipe(sd->mainPipe);
 
@@ -213,13 +214,14 @@ void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* 
     msg.code = SERVER_SHUTDOWN;
     for (i = 0; i < sd->maxUsers; i++) {
         if (sd->clients[i].valid == 1) {
-            printf("\nVou desconectar o cliente %s!\n", sd->clients[i].username);
+            printf("[SERVIDOR] Vou desconectar o cliente %s!\n", sd->clients[i].username);
             write(sd->clients[i].fdPipeClient, &msg, sizeof (msg));
             closeNamedPipe(sd->clients[i].fdPipeClient);
-            printf("\nO cliente %s foi desconectado!\n", sd->clients[i].username);
+            printf("[SERVIDOR] O cliente %s foi desconectado!\n", sd->clients[i].username);
         }
     }
 
+    puts("[SERVIDOR] Vou fechar e apagar os pipes de interacao!");
     for (i = 0; i < sd->numInteractivePipes; i++) {
         write(pipes[i].fd, buffer, strlen(buffer));
         closeNamedPipe(pipes[i].fd);
