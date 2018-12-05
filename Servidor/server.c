@@ -24,7 +24,7 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
 void* readFromMainPipe(void* arg);
 void* readFromIntPipe(void* arg);
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
-
+void testaAspell();
 
 EditorData eData;
 ServerData sData;
@@ -35,7 +35,7 @@ int fdMainPipe = -1;
 
 int main(int argc, char** argv) {
     if (verifySingleInstance() < 0)
-        exitError("Já existe uma instância do servidor em execução!");
+        exitError("[SERVIDOR] Ja existe uma instância do servidor em execucao!");
 
     initializeServerData(&sData);
     checkArgs(argc, argv, &sData);
@@ -60,36 +60,15 @@ int main(int argc, char** argv) {
     pthread_t idMainPipe;
     pthread_t idIntPipes[sData.numInteractivePipes];
 
-
-    if (spellCheckSentence("iahtnaçsd", fdToAspell, fdFromAspell) == 0) {
-        puts("Esta correto");
-    }else{
-        puts("Esta incorreto");
-    }
-    if (spellCheckSentence("Ricardo", fdToAspell, fdFromAspell) == 0) {
-        puts("Esta correto");
-    }else{
-        puts("Esta incorreto");
-    }
-    if (spellCheckSentence("Sarah", fdToAspell, fdFromAspell) == 0) {
-        puts("Esta correto");
-    }else{
-        puts("Esta incorreto");
-    }
-    if (spellCheckSentence("frase do dia", fdToAspell, fdFromAspell) == 0) {
-        puts("Esta correto");
-    }else{
-        puts("Esta incorreto");
-    }
+    testaAspell();
 
     createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
-
 
     //Fechar o programa 
     pthread_join(idCommands, NULL);
 
     //Fechar o programa
-    printf("O servidor vai terminar!\n");
+    printf("[SERVIDOR] Vai ser terminado!\n");
 
     closeAndDeleteServerPipes(fdMainPipe, &sData, interactivePipes);
 
@@ -112,7 +91,7 @@ void* readCommands() {
     setbuf(stdout, NULL);
     int i;
     while (sData.runServer) {
-        printf("Introduza o comando: ");
+        printf("[SERVIDOR] Introduza o comando: ");
         scanf(" %39[^\n]", comando);
         //comando tudo em letras minusculas
         toLower(comando);
@@ -151,7 +130,7 @@ void* readCommands() {
                 cmdText();
                 break;
             default:
-                puts("Comando invalido!");
+                puts("[SERVIDOR] Comando invalido!");
         }
     }
     return NULL;
@@ -183,10 +162,12 @@ void configuraSinal(int sinal) {
  */
 void createNamedPipesServer(InteractionPipe * pipes) {
     char pipeName[PIPE_NAME_MAX];
+    puts("[SERVIDOR] Vai ser criado o pipe principal!");
     createServerNamedPipe(sData.mainPipe);
 
     char temp[PIPE_NAME_MAX];
     for (int i = 0; i < sData.numInteractivePipes; i++) {
+        printf("[SERVIDOR] Vou criar o %d pipe interativo!\n", i + 1);
         snprintf(temp, PIPE_NAME_MAX, "%s%d_", INTERACTIVE_PIPE_SERVER, i);
         if (createNamedPipe(pipeName, temp) == 0)
             strncpy(pipes[i].pipeName, pipeName, PIPE_NAME_MAX);
@@ -199,8 +180,9 @@ void createNamedPipesServer(InteractionPipe * pipes) {
  */
 void openNamedPipesServer(InteractionPipe * pipes) {
     fdMainPipe = openNamedPipe(sData.mainPipe, O_RDWR);
-
+    puts("[SERVIDOR] Vai ser aberto o pipe principal!");
     for (int i = 0; i < sData.numInteractivePipes; i++) {
+        printf("[SERVIDOR] Vou ser aberto o %d pipe interativo!\n", i + 1);
         pipes[i].fd = openNamedPipe(pipes[i].pipeName, O_RDWR);
     }
 }
@@ -212,6 +194,7 @@ void openNamedPipesServer(InteractionPipe * pipes) {
 void initializeInteractivePipes(InteractionPipe * pipes) {
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++) {
+        printf("[SERVIDOR] Vou inicializar o %d pipe interativo!\n", i + 1);
         pipes[i].numUsers = 0;
     }
 }
@@ -225,26 +208,27 @@ void initializeInteractivePipes(InteractionPipe * pipes) {
  * @param intpipes Array dos Pipes Interativos
  */
 void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe * pipes) {
+    puts("[SERVIDOR] Vao ser criadas as threads!");
     int err;
     err = pthread_create(commands, NULL, readCommands, NULL);
     if (err)
-        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+        printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
-        printf("\n A thread foi criada!\n");
+        printf("[SERVIDOR] A thread responsavel pela leitura dos comandos foi criada!\n");
 
     err = pthread_create(mainpipe, NULL, readFromMainPipe, (void*) pipes);
     if (err)
-        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+        printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
-        printf("\n A thread foi criada!\n");
+        printf("[SERVIDOR] A thread responsavel por ler o pipe principal foi criada!\n");
 
     int i;
     for (i = 0; i < sData.numInteractivePipes; i++) {
         err = pthread_create((&intpipes[i]), NULL, readFromIntPipe, (void*) &(pipes[i]));
         if (err)
-            printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+            printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
         else
-            printf("\n A thread foi criada!\n");
+            printf("[SERVIDOR] A thread responsavel por ler o %d pipe interativo foi criada!\n", i+1);
     }
 }
 
@@ -257,8 +241,10 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]) {
     pthread_join(mainpipe, NULL);
     int i;
-    for (i = 0; i < sData.numInteractivePipes; i++)
+    for (i = 0; i < sData.numInteractivePipes; i++){
+        printf("[SERVIDOR] A thread responsavel por ler o %d pipe interativo deu join!\n", i+1);
         pthread_join(intpipes[i], NULL);
+    }
 }
 
 /**
@@ -274,26 +260,26 @@ void* readFromMainPipe(void* arg) {
     InteractionPipe* pipes = (InteractionPipe*) arg;
 
     while (sData.runServer) {
-        printf("Estou a espera de input do cliente\n");
+        printf("[SERVIDOR] Estou a espera de input do cliente!\n");
         nBytes = read(fdMainPipe, &login, sizeof (LoginMsg));
-        printf("Recebi informacao\n");
+        printf("[SERVIDOR] Recebi informacao!\n");
         if (nBytes == sizeof (LoginMsg)) {
-            printf("Recebi login\n");
+            printf("[SERVIDOR] Recebi login!\n");
             fdCli = openNamedPipe(login.nomePipeCliente, O_WRONLY);
-            printf("\n\n%s\n\n", login.nomePipeCliente);
+            //printf("\n\n%s\n\n", login.nomePipeCliente);
             if (fdCli == -1)
                 continue;
             pos = getFirstAvailablePosition(sData);
-            printf("Pos: %d\n", pos);
+            //printf("Pos: %d\n", pos);
             if (!checkUsername(login.username) || checkUserOnline(login.username, sData) || pos == -1) {
                 msg.code = LOGIN_FAILURE;
-                printf("Falhou o login\n");
+                printf("[SERVIDOR] Falhou o login!\n");
             } else {
                 msg.code = LOGIN_SUCCESS;
                 int index = getIntPipe(sData, pipes);
                 strncpy(msg.intPipeName, pipes[index].pipeName, PIPE_MAX_NAME);
                 registerClient(login.username, &sData, pos, fdCli, pipes[index].fd);
-                printf("Login correto\n");
+                printf("[SERVIDOR] Login correto!\n");
             }
             write(fdCli, &msg, sizeof (msg));
         }
@@ -316,7 +302,7 @@ void* readFromIntPipe(void* arg) {
             switch (msg.msgType) {
                 case CLIENT_SHUTDOWN:
                     removeClient(msg.username, &sData);
-                    printf("O utilizador %s desconectou-se!\n", msg.username);
+                    printf("[SERVIDOR] O utilizador %s desconectou-se!\n", msg.username);
                     pipeI->numUsers--;
                     break;
                 case K_ENTER:
@@ -328,4 +314,27 @@ void* readFromIntPipe(void* arg) {
         }
     }
     return NULL;
+}
+
+void testaAspell() {
+    if (spellCheckSentence("sarahcomh", fdToAspell, fdFromAspell) == 0) {
+        puts("[ASPELL] Esta correto");
+    } else {
+        puts("[ASPELL] Esta incorreto");
+    }
+    if (spellCheckSentence("Ricardo", fdToAspell, fdFromAspell) == 0) {
+        puts("[ASPELL] Esta correto");
+    } else {
+        puts("[ASPELL] Esta incorreto");
+    }
+    if (spellCheckSentence("Sarah", fdToAspell, fdFromAspell) == 0) {
+        puts("[ASPELL] Esta correto");
+    } else {
+        puts("[ASPELL] Esta incorreto");
+    }
+    if (spellCheckSentence("frase do dia", fdToAspell, fdFromAspell) == 0) {
+        puts("[ASPELL] Esta correto");
+    } else {
+        puts("[ASPELL] Esta incorreto");
+    }
 }

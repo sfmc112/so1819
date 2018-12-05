@@ -82,7 +82,8 @@ void startAspell(int* fdWrite, int* fdRead) {
     pipe(fdPipeToAspell);
     pipe(fdPipeFromAspell);
 
-
+    printf("[SERVIDOR] Aspell vai ser iniciado!\n");
+    
     if (fork() == 0) {
         dup2(fdPipeToAspell[0], STDIN_FILENO);
         close(fdPipeToAspell[1]);
@@ -100,7 +101,7 @@ void startAspell(int* fdWrite, int* fdRead) {
 
         bytesRead = read(*fdRead, resp, 4096);
         resp[bytesRead - 1] = 0;
-        printf("Aspell: <%s>\n", resp);
+        //printf("Aspell: <%s>\n", resp);
     }
 }
 

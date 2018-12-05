@@ -34,11 +34,12 @@ int main(int argc, char** argv) {
 
     strncpy(servPipe, MAIN_PIPE_SERVER, PIPE_NAME_MAX);
     strncpy(myPipe, PIPE_USER, PIPE_NAME_MAX);
+    puts("[CLIENTE] Vou criar o pipe principal!");
     createNamedPipe(tempPipe, myPipe);
     strncpy(myPipe, tempPipe, PIPE_NAME_MAX);
 
     int flag = checkArgs(argc, argv, servPipe, user);
-
+puts("[CLIENTE] Vou abrir o pipe principal!");
     fdSv = openNamedPipe(servPipe, O_WRONLY);
 
     if (fdSv == -1) {
@@ -58,10 +59,12 @@ int main(int argc, char** argv) {
     pthread_t idMyPipe;
 
     createClientStartingThreads(&idEditor, &idMyPipe);
+    puts("[CLIENTE] A thread responsavel pelo editor deu join");
     pthread_join(idEditor, NULL);
 
     //A aplicaçao vai terminar...
     exitClient();
+    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal deu join");
     pthread_join(idMyPipe, NULL); 
 
     return (EXIT_SUCCESS);
@@ -75,7 +78,7 @@ void signalBehaviorBeforeLogin(int numSinal) {
     if (numSinal == SIGINT) {
         exitLoginFailure();
     } else if (numSinal == SIGPIPE) {
-        printf("Recebi SIGPIPE\n");
+        printf("[CLIENTE] Recebi SIGPIPE\n");
         exitServerShutdown();
     }
 }
@@ -115,7 +118,7 @@ void configureSignalAfterLogin(int sinal) {
  * @param login username do cliente
  */
 void sendLoginToServer(char* user) {
-
+    puts("[CLIENTE] Vou enviar login para o servidor!");
     //printf("Estou a abrir o meu pipe %s\n", myPipe);
     fdMyPipe = openNamedPipe(myPipe, O_RDWR);
 
@@ -149,7 +152,7 @@ void sendLoginToServer(char* user) {
     }
 
     if (msg.code == LOGIN_FAILURE) {
-        printf("Login Falhou!\n");
+        printf("[CLIENTE] Login Falhou!\n");
         exitLoginFailure();
     }
 
@@ -169,15 +172,15 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
     int err;
     err = pthread_create(idEditor, NULL, startEditor, NULL);
     if (err)
-        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+        printf("[CLIENTE] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
-        printf("\n A thread foi criada!\n");
+        printf("[CLIENTE] A thread responsavel pelo editor foi criada!\n");
 
     err = pthread_create(idMyPipe, NULL, readFromMyPipe, NULL);
     if (err)
-        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+        printf("[CLIENTE] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
-        printf("\n A thread foi criada!\n");
+        printf("[CLIENTE] A thread responsavel pela leitura do pipe foi criada!\n");
 }
 
 /**
@@ -227,7 +230,7 @@ void* readFromMyPipe() {
  */
 void exitServerShutdown() {
     endwin();
-    printf("O servidor foi desligado!\nA aplicação vai encerrar....\n");
+    printf("[CLIENTE] O servidor foi desligado!\n[CLIENTE] A aplicação vai encerrar....\n");
     if (fdMyPipe >= 0)
         closeNamedPipe(fdMyPipe);
     if (fdSv >= 0)
@@ -241,7 +244,7 @@ void exitServerShutdown() {
  */
 void exitClient() {
     endwin();
-    printf("A aplicação vai encerrar....\n");
+    printf("[CLIENTE] A aplicação vai encerrar....\n");
 
     ClientMsg msg;
 
@@ -262,7 +265,7 @@ void exitClient() {
  * Função responsável por terminar a sessão, fechando os pipes abertos e apagando o próprio pipe.
  */
 void exitLoginFailure() {
-    printf("A aplicação vai encerrar....\n");
+    printf("[CLIENTE] A aplicação vai encerrar....\n");
     if (fdMyPipe >= 0)
         closeNamedPipe(fdMyPipe);
     if (fdSv >= 0)

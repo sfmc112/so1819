@@ -40,9 +40,7 @@ int createNamedPipe(char* nomePipe, char* dono) {
             return fatalErrorMsg("Nao consegui criar o pipe", "createNamedPipe()");
         }
     }
-
     printf("O pipe <%s> foi criado com sucesso!\n", nomePipe);
-
     return 0;
 }
 
@@ -59,8 +57,7 @@ int createServerNamedPipe(char* pipeName) {
             return fatalErrorMsg("Nao consegui criar o pipe", "createNamedPipe()");
         }
     }
-    printf("O pipe do servidor foi criado com sucesso!\n");
-
+    printf("O pipe <%s> foi criado com sucesso!\n", pipeName);
     return 0;
 }
 
@@ -73,6 +70,7 @@ int deleteNamedPipe(char* pathname) {
     if (res == -1) {
         return fatalErrorMsg("Nao consegui eliminar o pipe", "deleteNamedPipe()");
     }
+    printf("O pipe <%s> foi eliminado com sucesso!\n", pathname);
     return 0;
 }
 
@@ -87,9 +85,7 @@ int openNamedPipe(char* pathname, int mode) {
     if (fd == -1) {
         return fatalErrorMsg("Nao consegui abrir o pipe para escrita", "openNamedPipe()");
     }
-
-    printf("\nO pipe <%s> foi aberto com sucesso!\n", pathname);
-
+    printf("O pipe <%s> foi aberto com sucesso!\n", pathname);
     return fd;
 }
 
@@ -116,7 +112,7 @@ void writeServerMsg(int fd, ServerMsg* msg){
  * @return erro grave (1)
  */
 int fatalErrorMsg(char* descricao, char* funcao) {
-    fprintf(stderr, "\n[ERRO]: %s\n", descricao);
+    fprintf(stderr, "[ERRO]: %s\n", descricao);
     perror(funcao);
     return -1;
 }
