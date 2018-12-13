@@ -62,7 +62,7 @@ void resetMEDITLines(EditorData* ed) {
             ed->lines[i].text[j] = ' ';
     }
 
-    strncpy(ed->fileName, "nenhum ficheiro carregado", MAX_FILE_NAME);
+    strncpy(ed->fileName, "sem titulo", MAX_FILE_NAME);
 }
 
 /**

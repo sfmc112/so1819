@@ -147,7 +147,7 @@ void*readCommands() {
  */
 void trataSinal(int numSinal) {
     if (numSinal == SIGUSR1 || numSinal == SIGINT) {
-        puts("Recebi sinal");
+        //puts("Recebi sinal");
         cmdShutdown(&sData);
     }
 }
@@ -287,6 +287,7 @@ void* readFromMainPipe(void* arg) {
                 printf("[SERVIDOR] Falhou o login!\n");
             } else {
                 msg.code = LOGIN_SUCCESS;
+                msg.ed = eData;
                 int index = getIntPipe(sData, pipes);
                 strncpy(msg.intPipeName, pipes[index].pipeName, PIPE_MAX_NAME);
                 registerClient(login.username, &sData, pos, fdCli, pipes[index].fd);
@@ -319,6 +320,8 @@ void* readFromIntPipe(void* arg) {
                 case K_ENTER:
                     //Ask aspell
                     break;
+                case K_CHAR:
+                    
                 default:
                     break;
             }

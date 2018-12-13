@@ -183,8 +183,7 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
  */
 void* startEditor() {
     //TODO mutex
-    editor(user, &ed);
-    runClient = 0;
+    editor(user, &ed, fdSv, &runClient);
     return NULL;
 }
 
@@ -207,8 +206,12 @@ void* readFromMyPipe() {
                 case EDITOR_UPDATE:
                     // TODO Terá que ser protegido por Mutex
                     ed = msg.ed;
-                    // Atualizar Ecra
-                    clearEditor(msg.ed.lin, msg.ed.col);
+                    writeDocument(ed.lines, ed.lin);
+                    refreshCursor(ed.cursorLinePosition, ed.cursorColumnPosition);
+                    break;
+                case EDITOR_SHUTDOWN:
+                    runClient = 0;
+                    close(STDIN_FILENO);
                     break;
                 default:
                     break;

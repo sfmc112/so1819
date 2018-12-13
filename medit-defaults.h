@@ -19,6 +19,7 @@
 #define LOGIN_FAILURE 1
 #define SERVER_SHUTDOWN 2
 #define EDITOR_UPDATE 3
+#define EDITOR_SHUTDOWN 4
 
 /* MSG TYPES */
 #define MOVE_UP 100
@@ -54,13 +55,16 @@ struct _editordata {
     int timeout;
     // As linhas com o texto
     Line lines[DEFAULT_MAXLINES];
+    int cursorLinePosition;
+    int cursorColumnPosition;
 };
 
 typedef struct _servermessage {
-    // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_UPDATE 3
+    // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_UPDATE 3\n - EDITOR_SHUTDOWN 4
     int code;
     char intPipeName[PIPE_MAX_NAME];
     EditorData ed;
+
 } ServerMsg;
 
 typedef struct _clientmessage {
@@ -68,6 +72,8 @@ typedef struct _clientmessage {
     int msgType;
     char letra;
     char username[9];
+    int linePosition;
+    int columnPosition;
 } ClientMsg;
 
 typedef struct _loginmsg {

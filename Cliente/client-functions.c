@@ -26,18 +26,15 @@ WINDOW* createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int s
 void configureWindow(WINDOW* janela, int setCores);
 void writeLineNumbers();
 void writeUser(char* name, int line);
-void writeDocument(Line *text, int nLines);
 void writeTextLine(char* text, int line);
 void clearEditor(int dimY, int dimX);
 void resetLine(WINDOW* w, int line, int dimX);
-void writeTitle();
-void refreshCursor(int y, int x);
+void writeTitle(char* titulo);
 void editMode(int y, int x, char* linha);
 void writeKey(int key, char* linha, int x);
 void getLinha(char* linha, int y);
 void backSpaceKey(char* linha, int x, int y);
 void deleteKey(char* linha, int x, int y);
-void editor(char* user, EditorData * ed);
 //WINDOW* masterWin;
 WINDOW* titleWin;
 WINDOW* userWin;
@@ -84,7 +81,7 @@ void loginSession(char* user) {
 /**
  * Função responsável por tudo acerca do editor.
  */
-void editor(char* user, EditorData * ed) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
+void editor(char* user, EditorData * ed, int fdServ, int* sair) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
     initscr();
     start_color();
     clear();
@@ -99,14 +96,14 @@ void editor(char* user, EditorData * ed) { /* TODO receber nome do utilizador e 
     titleWin = createSubWindow(stdscr, WIN_TITLE_MAX_Y, WIN_TITLE_MAX_X, 0, 0);
     userWin = createSubWindow(stdscr, WIN_USER_MAX_Y, WIN_USER_MAX_X, WIN_TITLE_MAX_Y + 1, 0);
     lineWin = createSubWindow(stdscr, WIN_LINENUM_MAX_Y, WIN_LINENUM_MAX_X, WIN_TITLE_MAX_Y + 1, WIN_USER_MAX_X + 1);
-    editorWin = createSubWindow(stdscr, WIN_EDITOR_MAX_Y, WIN_EDITOR_MAX_X, WIN_TITLE_MAX_Y + 1, WIN_LINENUM_MAX_X + WIN_USER_MAX_X + 2);
+    editorWin = createSubWindow(stdscr, ed->lin, ed->col, WIN_TITLE_MAX_Y + 1, WIN_LINENUM_MAX_X + WIN_USER_MAX_X + 2);
 
     configureWindow(userWin, COLOR_PAIR(3));
     configureWindow(lineWin, COLOR_PAIR(3));
     configureWindow(editorWin, COLOR_PAIR(2));
     configureWindow(titleWin, COLOR_PAIR(1));
 
-    writeTitle();
+    writeTitle(ed->fileName);
     writeLineNumbers();
     //writeUser(user, 4);
 
@@ -114,59 +111,78 @@ void editor(char* user, EditorData * ed) { /* TODO receber nome do utilizador e 
     wrefresh(stdscr);
     wrefresh(editorWin);
 
-    char* doc[WIN_EDITOR_MAX_Y] = {
-        "Ola tudo fixe isto e o documento brutal",
-        "vai ter duas linhas e ja e bem bom",
-        "oops afinal tem mais, isto e so um teste!"
-    };
-    for (int i = 0; i < WIN_EDITOR_MAX_Y; i++) {
-        lines[i].free = 1;
-        for (int j = 0; j < WIN_EDITOR_MAX_X; j++) {
-            lines[i].text[j] = ' ';
+    /*
+        char* doc[WIN_EDITOR_MAX_Y] = {
+            "Ola tudo fixe isto e o documento brutal",
+            "vai ter duas linhas e ja e bem bom",
+            "oops afinal tem mais, isto e so um teste!"
+        };
+        for (int i = 0; i < WIN_EDITOR_MAX_Y; i++) {
+            lines[i].free = 1;
+            for (int j = 0; j < WIN_EDITOR_MAX_X; j++) {
+                lines[i].text[j] = ' ';
+            }
+
         }
+     */
 
-    }
-
-    clearEditor(WIN_EDITOR_MAX_Y, WIN_EDITOR_MAX_X);
-    writeDocument(lines, WIN_EDITOR_MAX_Y);
+    clearEditor(ed->lin, ed->col);
+    writeDocument(ed->lines, ed->lin);
     wrefresh(editorWin);
 
-    int key, x = 0, y = 0;
+    int key;// x = 0, y = 0;
     //char linha[WIN_EDITOR_MAX_X];
+/*
     mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
     refreshCursor(y, x);
+*/
 
-    while ((key = getch()) != KEY_ESC) {
+    ClientMsg msg;
+
+    while (!*sair) {
+        key = getch();
+
         switch (key) {
             case KEY_LEFT:
-                if (x > 0)
-                    x--;
+                msg.msgType = MOVE_LEFT;
                 break;
             case KEY_RIGHT:
-                if (x < WIN_EDITOR_MAX_X)
-                    x++;
+                msg.msgType = MOVE_RIGHT;
                 break;
             case KEY_UP:
-                if (y > 0)
-                    y--;
+                msg.msgType = MOVE_UP;
                 break;
             case KEY_DOWN:
-                if (y < WIN_EDITOR_MAX_Y)
-                    y++;
+                msg.msgType = MOVE_DOWN;
                 break;
             case KEY_ENTR:
-                //TODO SE LINHA ESTÁ LIVRE, COLOCA OCUPADA E COMEÇA EDIÇÃO
-                writeUser(user, y);
-                //getLinha(linha, y);
-                lines[y].free = 0;
-                editMode(y, x, lines[y].text);
-                writeDocument(lines, WIN_EDITOR_MAX_Y);
-                lines[y].free = 1;
-                // TODO DESOCUPA A LINHA
-                mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
+                /*
+                                //TODO SE LINHA ESTÁ LIVRE, COLOCA OCUPADA E COMEÇA EDIÇÃO
+                                writeUser(user, y);
+                                //getLinha(linha, y);
+                                lines[y].free = 0;
+                                editMode(y, x, lines[y].text);
+                                writeDocument(lines, ed->lin);
+                                lines[y].free = 1;
+                                // TODO DESOCUPA A LINHA
+                                mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
+                 */
+                msg.msgType = K_ENTER;
                 break;
+            case KEY_BACKSPACE:
+                msg.msgType = K_BACKSPACE;
+                break;
+            case KEY_DELETE:
+                msg.msgType = K_DEL;
+                break;
+            case KEY_ESC:
+                msg.msgType = K_ESC;
+            default:
+                msg.msgType = K_CHAR;
+                msg.letra = key;
         }
-        refreshCursor(y, x);
+        if (!*sair)
+            write(fdServ, &msg, sizeof (msg));
     }
     endwin();
     return;
@@ -252,8 +268,8 @@ void configureWindow(WINDOW* janela, int setCores) {
 /**
  * Função responsável por escrever na janela titleWin um título.
  */
-void writeTitle() {
-    mvwprintw(titleWin, 0, 0, "%s", TITLE);
+void writeTitle(char* titulo) {
+    mvwprintw(titleWin, 0, 0, "%s - MEDIT", titulo);
 }
 
 /**
@@ -420,4 +436,4 @@ void configuraSinal(int sinal) {
         perror("Erro a tratar sinal!");
     }
 }
-*/
+ */

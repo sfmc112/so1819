@@ -13,6 +13,10 @@ typedef struct _clientdata {
     int fdIntPipe;
     // Descritor do named pipe do cliente
     int fdPipeClient;
+    // Linha do editor onde o cliente se encontra
+    int linePosition;
+    // Coluna do editor onde o cliente se encontra
+    int columnPosition;
 } ClientData;
 
 typedef struct _serverdata {
