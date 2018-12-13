@@ -25,6 +25,8 @@ char user[9];
 char myPipe[PIPE_NAME_MAX];
 char servPipe[PIPE_NAME_MAX];
 EditorData ed;
+pthread_t idEditor;
+pthread_t idMyPipe;
 
 int main(int argc, char** argv) {
     configureSignalBeforeLogin(SIGINT);
@@ -34,11 +36,12 @@ int main(int argc, char** argv) {
 
     strncpy(servPipe, MAIN_PIPE_SERVER, PIPE_NAME_MAX);
     strncpy(myPipe, PIPE_USER, PIPE_NAME_MAX);
+    puts("[CLIENTE] Vou criar o pipe principal!");
     createNamedPipe(tempPipe, myPipe);
     strncpy(myPipe, tempPipe, PIPE_NAME_MAX);
 
     int flag = checkArgs(argc, argv, servPipe, user);
-
+    puts("[CLIENTE] Vou abrir o pipe principal!");
     fdSv = openNamedPipe(servPipe, O_WRONLY);
 
     if (fdSv == -1) {
@@ -54,17 +57,9 @@ int main(int argc, char** argv) {
     configureSignalAfterLogin(SIGINT);
 
     // Login Efetuado com sucesso
-    pthread_t idEditor;
-    pthread_t idMyPipe;
-
     createClientStartingThreads(&idEditor, &idMyPipe);
-    pthread_join(idEditor, NULL);
-
     //A aplicaçao vai terminar...
     exitClient();
-    pthread_join(idMyPipe, NULL); 
-
-    return (EXIT_SUCCESS);
 }
 
 /**
@@ -75,6 +70,7 @@ void signalBehaviorBeforeLogin(int numSinal) {
     if (numSinal == SIGINT) {
         exitLoginFailure();
     } else if (numSinal == SIGPIPE) {
+        printf("[CLIENTE] Recebi SIGPIPE\n");
         exitServerShutdown();
     }
 }
@@ -95,6 +91,8 @@ void configureSignalBeforeLogin(int sinal) {
  */
 void signalBehaviorAfterLogin(int numSinal) {
     if (numSinal == SIGINT) {
+        pthread_cancel(idEditor);
+        puts("[CLIENTE] A thread responsavel pelo editor terminou!");
         exitClient();
     }
 }
@@ -114,7 +112,7 @@ void configureSignalAfterLogin(int sinal) {
  * @param login username do cliente
  */
 void sendLoginToServer(char* user) {
-
+    puts("[CLIENTE] Vou enviar login para o servidor!");
     //printf("Estou a abrir o meu pipe %s\n", myPipe);
     fdMyPipe = openNamedPipe(myPipe, O_RDWR);
 
@@ -148,7 +146,7 @@ void sendLoginToServer(char* user) {
     }
 
     if (msg.code == LOGIN_FAILURE) {
-        printf("Login Falhou!\n");
+        printf("[CLIENTE] Login Falhou!\n");
         exitLoginFailure();
     }
 
@@ -168,23 +166,32 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
     int err;
     err = pthread_create(idEditor, NULL, startEditor, NULL);
     if (err)
-        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+        printf("[CLIENTE] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
-        printf("\n A thread foi criada!\n");
+        printf("[CLIENTE] A thread responsavel pelo editor foi criada!\n");
 
     err = pthread_create(idMyPipe, NULL, readFromMyPipe, NULL);
     if (err)
-        printf("\nNão foi possível criar a thread :[%s]\n", strerror(err));
+        printf("[CLIENTE] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
-        printf("\n A thread foi criada!\n");
+        printf("[CLIENTE] A thread responsavel pela leitura do pipe foi criada!\n");
 }
 
+/**
+ * Função responsável por iniciar o editor.
+ * @return NULL
+ */
 void* startEditor() {
     //TODO mutex
     editor(user, &ed);
     runClient = 0;
+    return NULL;
 }
 
+/**
+ * Função responsável por ler do pipe principal do servidor.
+ * @return NULL
+ */
 void* readFromMyPipe() {
     int nBytes;
     ServerMsg msg;
@@ -208,23 +215,47 @@ void* readFromMyPipe() {
             }
         }
     }
-    exitServerShutdown();
+    if (!serverUp)
+        exitServerShutdown();
+    return NULL;
 }
 
+/**
+ * Função responsável por fechar a sessão porque o servidor foi desligado, mas fechando primeiramente os pipes e apagando o seu próprio pipe.
+ */
 void exitServerShutdown() {
     endwin();
-    printf("O servidor foi desligado!\nA aplicação vai encerrar....\n");
-    if (fdMyPipe >= 0)
+    pthread_cancel(idEditor);
+    puts("[CLIENTE] A thread responsavel pelo editor terminou!");
+
+    printf("[CLIENTE] O servidor foi desligado!\n[CLIENTE] A aplicação vai encerrar....\n");
+
+    pthread_join(idMyPipe, NULL);
+    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal terminou!");
+
+    if (fdMyPipe >= 0) {
+        puts("[CLIENTE] Vou fechar o meu pipe!");
         closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0)
+    }
+
+    if (fdSv >= 0) {
+        puts("[CLIENTE] Vou fechar o pipe do servidor!");
         closeNamedPipe(fdSv);
+    }
+    puts("[CLIENTE] Vou apagar o meu pipe!");
     deleteNamedPipe(myPipe);
     exit(0);
 }
 
+/**
+ * Função responsável por terminar a sessão, avisando o servidor previamente. Fecha os pipes e apaga o pipe principal.
+ */
 void exitClient() {
+
+    printf("[CLIENTE] A aplicação vai encerrar....\n");
+    pthread_join(idEditor, NULL);
+    puts("[CLIENTE] A thread responsavel pelo editor terminou!");
     endwin();
-    printf("A aplicação vai encerrar....\n");
 
     ClientMsg msg;
 
@@ -233,20 +264,40 @@ void exitClient() {
 
     write(fdSv, &msg, sizeof (msg));
 
-    if (fdMyPipe >= 0)
+    runClient = 0;
+    write(fdMyPipe, "\n", 1);
+
+    pthread_join(idMyPipe, NULL);
+    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal terminou!");
+
+    if (fdMyPipe >= 0) {
+        puts("[CLIENTE] Vou fechar o meu pipe!");
         closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0)
+    }
+    if (fdSv >= 0) {
+        puts("[CLIENTE] Vou fechar o pipe do servidor!");
         closeNamedPipe(fdSv);
+    }
+    puts("[CLIENTE] Vou apagar o meu pipe!");
     deleteNamedPipe(myPipe);
+
     exit(0);
 }
 
+/**
+ * Função responsável por terminar a sessão, fechando os pipes abertos e apagando o próprio pipe.
+ */
 void exitLoginFailure() {
-    printf("A aplicação vai encerrar....\n");
-    if (fdMyPipe >= 0)
+    printf("[CLIENTE] A aplicação vai encerrar....\n");
+    if (fdMyPipe >= 0) {
+        puts("[CLIENTE] Vou fechar o meu pipe!");
         closeNamedPipe(fdMyPipe);
-    if (fdSv >= 0)
+    }
+    if (fdSv >= 0) {
+        puts("[CLIENTE] Vou fechar o pipe do servidor!");
         closeNamedPipe(fdSv);
+    }
+    puts("[CLIENTE] Vou apagar o meu pipe!");
     deleteNamedPipe(myPipe);
     exit(1);
 }

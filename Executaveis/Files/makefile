@@ -39,7 +39,7 @@ biblioteca.o : biblioteca.c
 	gcc -c biblioteca.c biblioteca.h $(HEADERS) $(RUN)
 	ar rcs biblioteca.a biblioteca.o
 	
-remake : limpa_objs limpa_pipes limpa_ficheiros get_ficheiros all
+remake : limpa_objs limpa_ficheiros get_ficheiros all
 
 limpa_objs :
 	rm ./*.o

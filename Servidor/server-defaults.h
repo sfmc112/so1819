@@ -5,18 +5,22 @@
 #define MAX_SIZE_FILENAME 50
 
 typedef struct _clientdata {
+    // Estado do cliente:\n - Ativo = 1\n - Inativo = 0
     int valid;
+    // Nome de utilizador
     char username[9];
+    // Descritor do named pipe interativo que foi atribuído ao cliente
     int fdIntPipe;
+    // Descritor do named pipe do cliente
     int fdPipeClient;
 } ClientData;
 
 typedef struct _serverdata {
-    //Variável de controlo de execução do servidor
+    // Variável de controlo de execução do servidor
     int runServer;
     // Nome do ficheiro da base dados de utilizadores
     char usersDB[MAX_SIZE_FILENAME];
-    //Número máximo de utilizadores
+    // Número máximo de utilizadores
     int maxUsers;
     // Named Pipe Principal
     char mainPipe[PIPE_NAME_MAX];
@@ -27,11 +31,11 @@ typedef struct _serverdata {
 } ServerData;
 
 typedef struct _intpipe {
-    //Número de utilizadores ligados a este pipe
+    // Número de utilizadores ligados a este pipe
     int numUsers;
-    //Nome do pipe de interação
+    // Nome do pipe de interação
     char pipeName[PIPE_NAME_MAX];
-    //Descritor do pipe interactivo
+    // Descritor do pipe interactivo
     int fd;
 } InteractionPipe;
 

@@ -5,10 +5,19 @@
 #include "server-defaults.h"
 #include "server-commands.h"
 
+/**
+ * Função responsável por colocar a variável de controlo a 0.
+ * @param sd Ponteiro para a Estrutura de Dados do Servidor
+ */
 void cmdShutdown(ServerData* sd) {
     sd->runServer = 0;
 }
 
+/**
+ * Função responsável por escrever todas as informações atuais do servidor.
+ * @param sd Estrutura de Dados do Servidor
+ * @param ed Estutura do Editor
+ */
 void cmdSettings(ServerData sd, EditorData ed) {
     printf("\n\n-----SETTINGS-----\n");
     printf("Numero de linhas do editor: %d\n", ed.lin);

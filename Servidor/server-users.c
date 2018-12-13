@@ -27,9 +27,9 @@ int checkUsername(char* user) {
 }
 
 /**
- * 
- * @param user
- * @param sd
+ * Função responsável por verificar se um determinado cliente se encontra online.
+ * @param user Nome de Utilizador
+ * @param sd Estrutura de Dados do Servidor
  * @return 1 se o utilizador existe e está ligado, 0 caso contrário
  */
 int checkUserOnline(char* user, ServerData sd) {

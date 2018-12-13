@@ -136,6 +136,11 @@ void initializeServerData(ServerData* sd) {
     }
 }
 
+/**
+ * Função responsável por encontrar a primeira posição disponível no array dos clientes, para que possa ser adicionado um cliente nessa mesma posição.
+ * @param sd Estrutura de Dados do Servidor
+ * @return posição
+ */
 int getFirstAvailablePosition(ServerData sd) {
     int j;
     for (j = 0; j < DEFAULT_MAXUSERS && sd.clients[j].valid; j++)
@@ -144,6 +149,14 @@ int getFirstAvailablePosition(ServerData sd) {
 
 }
 
+/**
+ * Função responsável por registar um cliente no array.
+ * @param username Nome de Utilizador
+ * @param sData Ponteiro para Estrutura de Dados do Servidor
+ * @param pos Posição
+ * @param fdCli Descritor do Pipe do Cliente
+ * @param fdIntPipe Descritor do Pipe Interativo
+ */
 void registerClient(char* username, ServerData* sData, int pos, int fdCli, int fdIntPipe) {
     sData->clients[pos].valid = 1;
     strncpy(sData->clients[pos].username, username, 9);
@@ -151,6 +164,12 @@ void registerClient(char* username, ServerData* sData, int pos, int fdCli, int f
     sData->clients[pos].fdIntPipe = fdIntPipe;
 }
 
+/**
+ * Função responsável por encontrar o pipe com menos clientes atribuídos.
+ * @param sd Estrutura de Dados do Servidor
+ * @param pipes Array de Pipes Interativos
+ * @return posição no array de Pipes
+ */
 int getIntPipe(ServerData sd, InteractionPipe* pipes) {
     int i, menor = 0;
     for (i = 1; i < sd.numInteractivePipes; i++)
@@ -161,25 +180,33 @@ int getIntPipe(ServerData sd, InteractionPipe* pipes) {
     return menor;
 }
 
+/**
+ * Função responsável por remover um cliente do array de clientes.
+ * @param username Nome de Utilizador
+ * @param sd Ponteiro para a Estrutura de Dados do Servidor
+ */
 void removeClient(char* username, ServerData* sd) {
-    // Vamos remover o cliente da lista de clientes ativos
-    // Fechar o FD do pipe do cliente
-    // Colocar o valid a 0
-    // Decrementar num_users do respectivo interative pipe
     int i;
     for (i = 0; i < sd->maxUsers; i++) {
-        if (sd->clients[i].valid && !strncmp(sd->clients[i].username, username, 9)){
-            sd->clients[i].valid=0;
+        if (sd->clients[i].valid && !strncmp(sd->clients[i].username, username, 9)) {
+            sd->clients[i].valid = 0;
             closeNamedPipe(sd->clients[i].fdPipeClient);
             break;
         }
     }
 }
 
+/**
+ * Função responsável por fechar e apagar os pipes do servidor.
+ * @param fdMainPipe Descritor do Pipe Principal
+ * @param sd Ponteiro para Estrutura de Dados do Servidor
+ * @param pipes Array de Pipes Interativos
+ */
 void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* pipes) {
     int i;
     char buffer[] = "close";
     write(fdMainPipe, buffer, strlen(buffer));
+    puts("[SERVIDOR] Vou fechar e apagar o pipe principal!");
     closeNamedPipe(fdMainPipe);
     deleteNamedPipe(sd->mainPipe);
 
@@ -187,13 +214,14 @@ void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* 
     msg.code = SERVER_SHUTDOWN;
     for (i = 0; i < sd->maxUsers; i++) {
         if (sd->clients[i].valid == 1) {
-            printf("Vou desconectar o cliente %s!\n", sd->clients[i].username);
+            printf("[SERVIDOR] Vou desconectar o cliente %s!\n", sd->clients[i].username);
             write(sd->clients[i].fdPipeClient, &msg, sizeof (msg));
             closeNamedPipe(sd->clients[i].fdPipeClient);
-            printf("O cliente %s foi desconectado!\n", sd->clients[i].username);
+            printf("[SERVIDOR] O cliente %s foi desconectado!\n", sd->clients[i].username);
         }
     }
 
+    puts("[SERVIDOR] Vou fechar e apagar os pipes de interacao!");
     for (i = 0; i < sd->numInteractivePipes; i++) {
         write(pipes[i].fd, buffer, strlen(buffer));
         closeNamedPipe(pipes[i].fd);
