@@ -24,4 +24,6 @@ void registerClient(char* username, ServerData* sd, int pos, int fdCli, int fdIn
 int getIntPipe(ServerData sd, InteractionPipe* pipes);
 void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* pipes);
 void removeClient(char* username, ServerData* sd);
+int getClientPipe(ServerData sd, char* user);
+void moveAllToTheLeft(char* linha, int x, int max_x);
 #endif /* SERVER_FUNCTIONS_H */

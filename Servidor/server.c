@@ -30,7 +30,6 @@ EditorData eData;
 ServerData sData;
 int fdToAspell = -1;
 int fdFromAspell = -1;
-
 int fdMainPipe = -1;
 
 int main(int argc, char** argv) {
@@ -65,12 +64,12 @@ int main(int argc, char** argv) {
     createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
 
     readCommands();
-    
+
     //Fechar o programa 
-/*
-    pthread_join(idCommands, NULL);
-    printf("[SERVIDOR] A thread responsavel por ler comandos terminou!\n");
-*/
+    /*
+        pthread_join(idCommands, NULL);
+        printf("[SERVIDOR] A thread responsavel por ler comandos terminou!\n");
+     */
 
     //Fechar o programa
     puts("[SERVIDOR] Vai ser terminado.");
@@ -90,7 +89,7 @@ int main(int argc, char** argv) {
  * Função responsável por ler o comando e interpreta-o.
  * @return 1 se conseguiu e 0 caso contrário
  */
-void*readCommands() {
+void* readCommands() {
     char comando[MAX_INPUT];
     const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
     char* token = NULL;
@@ -217,14 +216,14 @@ void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthre
     puts("[SERVIDOR] Vao ser criadas as threads!");
 
     int err;
-    
+
     /*
     err = pthread_create(commands, NULL, readCommands, NULL);
     if (err)
         printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
         printf("[SERVIDOR] A thread responsavel pela leitura dos comandos foi criada!\n");
-*/
+     */
 
     err = pthread_create(mainpipe, NULL, readFromMainPipe, (void*) pipes);
     if (err)
@@ -306,10 +305,15 @@ void* readFromMainPipe(void* arg) {
  */
 void* readFromIntPipe(void* arg) {
     ClientMsg msg;
+    ServerMsg smsg;
     int nBytes;
+    int state = 0; // 0 - Navegação | 1 - Edição
     InteractionPipe* pipeI = (InteractionPipe*) arg;
     while (sData.runServer) {
         nBytes = read(pipeI->fd, &msg, sizeof (msg));
+        smsg.ed.cursorLinePosition = msg.linePosition;
+        smsg.ed.cursorColumnPosition = msg.columnPosition;
+        smsg.code = EDITOR_ERROR;
         if (nBytes == sizeof (msg)) {
             switch (msg.msgType) {
                 case CLIENT_SHUTDOWN:
@@ -318,13 +322,78 @@ void* readFromIntPipe(void* arg) {
                     pipeI->numUsers--;
                     break;
                 case K_ENTER:
-                    //Ask aspell
+                    // TODO MUTEX
+                    if (!state) {
+                        if (eData.lines[msg.linePosition].free == 1) {
+                            eData.lines[msg.linePosition].free = 0;
+                            smsg.code = EDITOR_START;
+                            state = !state;
+                        }
+                    } else {
+                        // TODO GRAVAR A LINHA E ASPELL
+                        if (spellCheckSentence(eData.lines[msg.linePosition].text, fdToAspell, fdFromAspell) == 0) {
+                            state = !state;
+                            smsg.code = EDITOR_UPDATE;
+                        }
+                    }
+                    break;
+                case K_ESC:
+                    if (!state) {
+                        smsg.code = EDITOR_SHUTDOWN;
+                    } else {
+                        // TODO COLOCAR A LINHA COMO ESTAVA ANTES
+                        smsg.code = EDITOR_UPDATE;
+                    }
+                    break;
+                case K_BACKSPACE:
+                    if (state) {
+                        if (msg.columnPosition > 0) {
+                            moveAllToTheLeft(eData.lines[msg.linePosition].text, msg.columnPosition - 1, eData.col);
+                            smsg.ed.cursorColumnPosition = --msg.columnPosition;
+                            smsg.code = EDITOR_UPDATE;
+                        }
+                    }
+                    break;
+                case K_DEL:
+                    if (state) {
+                        moveAllToTheLeft(eData.lines[msg.linePosition].text, msg.columnPosition, eData.col);
+                        smsg.code = EDITOR_UPDATE;
+                    }
                     break;
                 case K_CHAR:
-                    
+                    if (state) {
+                        eData.lines[msg.linePosition].text[msg.columnPosition] = msg.letra;
+                        smsg.code = EDITOR_UPDATE;
+                    }
+                    break;
+                case MOVE_UP:
+                    if (!state) {
+                        if (msg.linePosition > 0) {
+                            smsg.ed.cursorLinePosition = --msg.linePosition;
+                        }
+                    }
+                    break;
+                case MOVE_DOWN:
+                    if (!state) {
+                        if (msg.linePosition < eData.lin - 1) {
+                            smsg.ed.cursorLinePosition = ++msg.linePosition;
+                        }
+                    }
+                    break;
+                case MOVE_LEFT:
+                    if (msg.columnPosition > 0) {
+                        smsg.ed.cursorColumnPosition = --msg.columnPosition;
+                    }
+                    break;
+                case MOVE_RIGHT:
+                    if (msg.columnPosition < eData.col - 1) {
+                        smsg.ed.cursorColumnPosition = ++msg.columnPosition;
+                    }
+                    break;
                 default:
                     break;
             }
+            write(getClientPipe(sData, msg.username), &smsg, sizeof(smsg));
         }
     }
     return NULL;

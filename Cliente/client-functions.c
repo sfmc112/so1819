@@ -33,8 +33,8 @@ void writeTitle(char* titulo);
 void editMode(int y, int x, char* linha);
 void writeKey(int key, char* linha, int x);
 void getLinha(char* linha, int y);
-void backSpaceKey(char* linha, int x, int y);
 void deleteKey(char* linha, int x, int y);
+void backSpaceKey(char* linha, int x, int y);
 //WINDOW* masterWin;
 WINDOW* titleWin;
 WINDOW* userWin;
@@ -138,10 +138,9 @@ void editor(char* user, EditorData * ed, int fdServ, int* sair) { /* TODO recebe
 */
 
     ClientMsg msg;
-
-    while (!*sair) {
+    strncpy(msg.username, user, 9);
+    while (!(*sair)) {
         key = getch();
-
         switch (key) {
             case KEY_LEFT:
                 msg.msgType = MOVE_LEFT;
@@ -181,7 +180,7 @@ void editor(char* user, EditorData * ed, int fdServ, int* sair) { /* TODO recebe
                 msg.msgType = K_CHAR;
                 msg.letra = key;
         }
-        if (!*sair)
+        if (!(*sair))
             write(fdServ, &msg, sizeof (msg));
     }
     endwin();

@@ -228,3 +228,30 @@ void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* 
         deleteNamedPipe(pipes[i].pipeName);
     }
 }
+
+/**
+ * Função responsável por mover todos os caractéres para a esquerda.
+ * @param linha linha de texto
+ * @param x posição no array
+ * @param max_x numero colunas
+ */
+void moveAllToTheLeft(char* linha, int x, int max_x) {
+    int max = max_x - 1;
+    for (; x < max; x++)
+        linha[x] = linha[x + 1];
+    linha[max] = ' ';
+}
+
+/**
+ * Função responsável por encontrar o descritor do pipe do cliente pelo username.
+ * @param sd Estrutura de Dados do Servidor
+ * @param user Username do Cliente
+ * @return descritor do pipe
+ */
+int getClientPipe(ServerData sd, char* user) {
+    for (int i = 1; i < sd.maxUsers; i++)
+        if (!strncmp(sd.clients[i].username, user, 9)) {
+            return sd.clients[i].fdPipeClient;
+        }
+    return -1;
+}
