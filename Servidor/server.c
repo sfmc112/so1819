@@ -64,9 +64,13 @@ int main(int argc, char** argv) {
 
     createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
 
+    readCommands();
+    
     //Fechar o programa 
+/*
     pthread_join(idCommands, NULL);
     printf("[SERVIDOR] A thread responsavel por ler comandos terminou!\n");
+*/
 
     //Fechar o programa
     puts("[SERVIDOR] Vai ser terminado.");
@@ -86,7 +90,7 @@ int main(int argc, char** argv) {
  * Função responsável por ler o comando e interpreta-o.
  * @return 1 se conseguiu e 0 caso contrário
  */
-void* readCommands() {
+void*readCommands() {
     char comando[MAX_INPUT];
     const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
     char* token = NULL;
@@ -135,7 +139,6 @@ void* readCommands() {
                 puts("[SERVIDOR] Comando invalido!");
         }
     }
-    return NULL;
 }
 
 /**
@@ -144,6 +147,7 @@ void* readCommands() {
  */
 void trataSinal(int numSinal) {
     if (numSinal == SIGUSR1 || numSinal == SIGINT) {
+        puts("Recebi sinal");
         cmdShutdown(&sData);
     }
 }
@@ -211,12 +215,16 @@ void initializeInteractivePipes(InteractionPipe * pipes) {
  */
 void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe * pipes) {
     puts("[SERVIDOR] Vao ser criadas as threads!");
+
     int err;
+    
+    /*
     err = pthread_create(commands, NULL, readCommands, NULL);
     if (err)
         printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
         printf("[SERVIDOR] A thread responsavel pela leitura dos comandos foi criada!\n");
+*/
 
     err = pthread_create(mainpipe, NULL, readFromMainPipe, (void*) pipes);
     if (err)

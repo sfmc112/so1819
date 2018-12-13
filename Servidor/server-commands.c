@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "server-utils.h"
 #include "server-defaults.h"
 #include "server-commands.h"
@@ -11,6 +12,7 @@
  */
 void cmdShutdown(ServerData* sd) {
     sd->runServer = 0;
+    close(STDIN_FILENO);
 }
 
 /**
