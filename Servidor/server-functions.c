@@ -133,6 +133,8 @@ void initializeServerData(ServerData* sd) {
     sd->numInteractivePipes = NUM_INTERACTIVE_PIPES;
     for (int i = 0; i < DEFAULT_MAXUSERS; i++) {
         sd->clients[i].valid = 0;
+        sd->clients[i].fdPipeClient = -1;
+        sd->clients[i].columnPosition = sd->clients[i].linePosition = 0;
     }
 }
 
@@ -162,6 +164,7 @@ void registerClient(char* username, ServerData* sData, int pos, int fdCli, int f
     strncpy(sData->clients[pos].username, username, 9);
     sData->clients[pos].fdPipeClient = fdCli;
     sData->clients[pos].fdIntPipe = fdIntPipe;
+    sData->clients[pos].columnPosition = sData->clients[pos].linePosition = 0;
 }
 
 /**
@@ -249,9 +252,17 @@ void moveAllToTheLeft(char* linha, int x, int max_x) {
  * @return descritor do pipe
  */
 int getClientPipe(ServerData sd, char* user) {
-    for (int i = 1; i < sd.maxUsers; i++)
-        if (!strncmp(sd.clients[i].username, user, 9)) {
+    for (int i = 0; i < sd.maxUsers; i++)
+        if (!strncmp(sd.clients[i].username, user, 8)) {
             return sd.clients[i].fdPipeClient;
+        }
+    return -1;
+}
+
+int getClientArrayPosition(ServerData sd, char* user){
+    for (int i = 0; i < sd.maxUsers; i++)
+        if (!strncmp(sd.clients[i].username, user, 8)) {
+            return i;
         }
     return -1;
 }

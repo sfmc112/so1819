@@ -202,21 +202,24 @@ int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
         //pal[strlen(pal)] = '\0';
         write(fdWrite, pal, strlen(pal));
         write(fdWrite, "\n", 1);
-        //printf("Escrevi: <%s\n>", pal);
+        printf("Escrevi: <%s\n>", pal);
         bytesRead = read(fdRead, resp, 4095);
         //printf("Li %d bytes\n", bytesRead);
         resp[bytesRead] = '\0';
-        //printf("\nAspell: <%s>\n", resp);
+        printf("\nAspell: <%s>\n", resp);
 
-        bytesRead = read(fdRead, resp2, 4095);
+        //bytesRead = read(fdRead, resp2, 4095);
         //printf("Li %d bytes\n", bytesRead);
-        resp2[bytesRead] = '\0';
+        //resp2[bytesRead] = '\0';
         //printf("\nAspell: <%s>\n", resp);
         if (resp[0] != '*')
             return 1;
+        
+        puts("Esta correto");
 
     } while ((token = strtok(NULL, " .,;:_?!")) != NULL);
 
+    puts("Esta correto");
     return 0;
 }
 

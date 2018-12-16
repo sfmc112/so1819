@@ -57,15 +57,15 @@ struct _editordata {
     int timeout;
     // As linhas com o texto
     Line lines[DEFAULT_MAXLINES];
-    int cursorLinePosition;
-    int cursorColumnPosition;
 };
 
 typedef struct _servermessage {
-    // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_START 3\n - EDITOR_ERROR 4\n - EDITOR_SHUTDOWN 5\n - EDITOR_UPDATE 6 
+    // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_START 3\n - EDITOR_ERROR 4\n - EDITOR_UPDATE 5\n - EDITOR_SHUTDOWN 6 
     int code;
     char intPipeName[PIPE_MAX_NAME];
     EditorData ed;
+    int cursorLinePosition;
+    int cursorColumnPosition;
 } ServerMsg;
 
 typedef struct _clientmessage {
@@ -73,8 +73,6 @@ typedef struct _clientmessage {
     int msgType;
     char letra;
     char username[9];
-    int linePosition;
-    int columnPosition;
 } ClientMsg;
 
 typedef struct _loginmsg {

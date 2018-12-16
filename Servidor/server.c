@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
 
     readCommands();
 
+
     //Fechar o programa 
     /*
         pthread_join(idCommands, NULL);
@@ -276,7 +277,7 @@ void* readFromMainPipe(void* arg) {
         if (nBytes == sizeof (LoginMsg)) {
             printf("[SERVIDOR] Recebi login!\n");
             fdCli = openNamedPipe(login.nomePipeCliente, O_WRONLY);
-            //printf("\n\n%s\n\n", login.nomePipeCliente);
+            printf("\nDescritor do cliente %s: %d\n\n", login.username, fdCli);
             if (fdCli == -1)
                 continue;
             pos = getFirstAvailablePosition(sData);
@@ -291,6 +292,7 @@ void* readFromMainPipe(void* arg) {
                 strncpy(msg.intPipeName, pipes[index].pipeName, PIPE_MAX_NAME);
                 registerClient(login.username, &sData, pos, fdCli, pipes[index].fd);
                 printf("[SERVIDOR] O utilizador %s conectou-se!\n", login.username);
+                printf("Descritor atual %d\n", sData.clients[getClientArrayPosition(sData, login.username)].fdPipeClient);
             }
             write(fdCli, &msg, sizeof (msg));
         }
@@ -307,14 +309,19 @@ void* readFromIntPipe(void* arg) {
     ClientMsg msg;
     ServerMsg smsg;
     int nBytes;
-    int state = 0; // 0 - Navegação | 1 - Edição
+    
     InteractionPipe* pipeI = (InteractionPipe*) arg;
     while (sData.runServer) {
         nBytes = read(pipeI->fd, &msg, sizeof (msg));
-        smsg.ed.cursorLinePosition = msg.linePosition;
-        smsg.ed.cursorColumnPosition = msg.columnPosition;
         smsg.code = EDITOR_ERROR;
         if (nBytes == sizeof (msg)) {
+            printf("Msg tipo %d\n", msg.msgType);
+            printf("Cliente %s\nLetra %c\n", msg.username, msg.letra);
+            
+            int indexClient = getClientArrayPosition(sData, msg.username);
+            int yPos = sData.clients[indexClient].linePosition;
+            int xPos = sData.clients[indexClient].columnPosition;
+            int state = sData.clients[indexClient].isEditing; // 0 - Navegação | 1 - Edição
             switch (msg.msgType) {
                 case CLIENT_SHUTDOWN:
                     removeClient(msg.username, &sData);
@@ -324,76 +331,98 @@ void* readFromIntPipe(void* arg) {
                 case K_ENTER:
                     // TODO MUTEX
                     if (!state) {
-                        if (eData.lines[msg.linePosition].free == 1) {
-                            eData.lines[msg.linePosition].free = 0;
+                        if (eData.lines[yPos].free == 1) {
+                            eData.lines[yPos].free = 0;
                             smsg.code = EDITOR_START;
                             state = !state;
                         }
                     } else {
                         // TODO GRAVAR A LINHA E ASPELL
-                        if (spellCheckSentence(eData.lines[msg.linePosition].text, fdToAspell, fdFromAspell) == 0) {
+                        puts("Vou perguntar ao Aspell se isto esta bem");
+                        printf("A frase e %s\n", eData.lines[yPos].text);
+                        if (spellCheckSentence(eData.lines[yPos].text, fdToAspell, fdFromAspell) == 0) {
+                            puts("Vou sair do modo de edicao porque a frase esta correta");
                             state = !state;
+                            eData.lines[yPos].free = 1;
                             smsg.code = EDITOR_UPDATE;
                         }
+                        
                     }
                     break;
                 case K_ESC:
                     if (!state) {
+                        puts("Cliente mandou sair");
                         smsg.code = EDITOR_SHUTDOWN;
                     } else {
                         // TODO COLOCAR A LINHA COMO ESTAVA ANTES
+                        puts("Cliente vai sair do modo de edicao");
+                        state = !state;
                         smsg.code = EDITOR_UPDATE;
                     }
                     break;
                 case K_BACKSPACE:
                     if (state) {
-                        if (msg.columnPosition > 0) {
-                            moveAllToTheLeft(eData.lines[msg.linePosition].text, msg.columnPosition - 1, eData.col);
-                            smsg.ed.cursorColumnPosition = --msg.columnPosition;
+                        if (xPos > 0) {
+                            moveAllToTheLeft(eData.lines[yPos].text, xPos - 1, eData.col);
+                            xPos--;
                             smsg.code = EDITOR_UPDATE;
                         }
                     }
                     break;
                 case K_DEL:
                     if (state) {
-                        moveAllToTheLeft(eData.lines[msg.linePosition].text, msg.columnPosition, eData.col);
+                        moveAllToTheLeft(eData.lines[yPos].text, xPos, eData.col);
                         smsg.code = EDITOR_UPDATE;
                     }
                     break;
                 case K_CHAR:
                     if (state) {
-                        eData.lines[msg.linePosition].text[msg.columnPosition] = msg.letra;
+                        eData.lines[yPos].text[xPos] = msg.letra;
+                        xPos++;
                         smsg.code = EDITOR_UPDATE;
                     }
                     break;
                 case MOVE_UP:
                     if (!state) {
-                        if (msg.linePosition > 0) {
-                            smsg.ed.cursorLinePosition = --msg.linePosition;
+                        if (yPos > 0) {
+                            yPos--;
+                            smsg.code = EDITOR_UPDATE;
                         }
                     }
                     break;
                 case MOVE_DOWN:
                     if (!state) {
-                        if (msg.linePosition < eData.lin - 1) {
-                            smsg.ed.cursorLinePosition = ++msg.linePosition;
+                        if (yPos < eData.lin - 1) {
+                            yPos++;
+                            smsg.code = EDITOR_UPDATE;
                         }
                     }
                     break;
                 case MOVE_LEFT:
-                    if (msg.columnPosition > 0) {
-                        smsg.ed.cursorColumnPosition = --msg.columnPosition;
+                    if (xPos > 0) {
+                        xPos--;
+                        smsg.code = EDITOR_UPDATE;
                     }
                     break;
                 case MOVE_RIGHT:
-                    if (msg.columnPosition < eData.col - 1) {
-                        smsg.ed.cursorColumnPosition = ++msg.columnPosition;
+                    if (xPos < eData.col - 1) {
+                        xPos++;
+                        smsg.code = EDITOR_UPDATE;
                     }
                     break;
                 default:
                     break;
             }
-            write(getClientPipe(sData, msg.username), &smsg, sizeof(smsg));
+            smsg.ed = eData;
+            sData.clients[indexClient].linePosition = yPos;
+            sData.clients[indexClient].columnPosition = xPos;
+            sData.clients[indexClient].isEditing = state;
+            smsg.cursorLinePosition = yPos;
+            smsg.cursorColumnPosition = xPos;
+            
+            printf("A enviar msg tipo %d no descritor %d\n", smsg.code, sData.clients[indexClient].fdPipeClient);
+            
+            write(sData.clients[indexClient].fdPipeClient, &smsg, sizeof (smsg));
         }
     }
     return NULL;

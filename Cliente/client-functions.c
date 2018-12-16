@@ -81,7 +81,8 @@ void loginSession(char* user) {
 /**
  * Função responsável por tudo acerca do editor.
  */
-void editor(char* user, EditorData * ed, int fdServ, int* sair) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
+void editor(char* user, EditorData * ed, int fdServ, int* run) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
+    puts("Entrei no editor");
     initscr();
     start_color();
     clear();
@@ -136,10 +137,12 @@ void editor(char* user, EditorData * ed, int fdServ, int* sair) { /* TODO recebe
     mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
     refreshCursor(y, x);
 */
-
+    refreshCursor(0, 0);
+    
     ClientMsg msg;
+    //msg.linePosition = msg.columnPosition = 0;
     strncpy(msg.username, user, 9);
-    while (!(*sair)) {
+    while (*run) {
         key = getch();
         switch (key) {
             case KEY_LEFT:
@@ -176,12 +179,15 @@ void editor(char* user, EditorData * ed, int fdServ, int* sair) { /* TODO recebe
                 break;
             case KEY_ESC:
                 msg.msgType = K_ESC;
+                break;
             default:
                 msg.msgType = K_CHAR;
                 msg.letra = key;
         }
-        if (!(*sair))
+        if (*run){
+            //getyx(editorWin, msg.linePosition, msg.columnPosition);
             write(fdServ, &msg, sizeof (msg));
+        }
     }
     endwin();
     return;

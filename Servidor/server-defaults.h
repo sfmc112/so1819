@@ -17,6 +17,8 @@ typedef struct _clientdata {
     int linePosition;
     // Coluna do editor onde o cliente se encontra
     int columnPosition;
+    // Variável de controlo de modo de edição e navegação
+    int isEditing;
 } ClientData;
 
 typedef struct _serverdata {
