@@ -15,4 +15,5 @@ void editMode(int y, int x, char* linha);
 void clearEditor(int dimY, int dimX);
 void refreshCursor(int y, int x);
 void writeDocument(Line *text, int nLines);
+void writeUsers(EditorData ed);
 #endif /* CLIENT_FUNCTIONS_H */

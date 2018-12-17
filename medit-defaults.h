@@ -57,6 +57,8 @@ struct _editordata {
     int timeout;
     // As linhas com o texto
     Line lines[DEFAULT_MAXLINES];
+    // Clientes ativos a editar
+    char clients[DEFAULT_MAXLINES][9];
 };
 
 typedef struct _servermessage {

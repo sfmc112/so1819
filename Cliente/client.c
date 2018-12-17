@@ -183,9 +183,7 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
  */
 void* startEditor() {
     //TODO mutex
-    puts("Vou entrar no editor");
     editor(user, &ed, fdSv, &runClient);
-    puts("Vou sair do editor");
     return NULL;
 }
 
@@ -205,17 +203,15 @@ void* readFromMyPipe() {
                 case SERVER_SHUTDOWN:
                     serverUp = 0;
                     break;
-                case EDITOR_UPDATE:
-                    // TODO Terá que ser protegido por Mutex
-                    ed = msg.ed;
-                    writeDocument(ed.lines, ed.lin);
-                    refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition);
-                    break;
                 case EDITOR_SHUTDOWN:
                     runClient = 0;
                     close(STDIN_FILENO);
                     break;
                 default:
+                    ed = msg.ed;
+                    writeUsers(ed);
+                    writeDocument(ed.lines, ed.lin);
+                    refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition);
                     break;
             }
         }
@@ -224,7 +220,7 @@ void* readFromMyPipe() {
         exitServerShutdown();
     else
         exitClient();
-    
+
     return NULL;
 }
 

@@ -58,8 +58,10 @@ void resetMEDITLines(EditorData* ed) {
 
     for (i = 0; i < ed->lin; i++) {
         ed->lines[i].free = 1;
-        for (j = 0; j < ed->col; j++)
+        strncpy(ed->clients[i], "\0", 1);
+        for (j = 0; j < ed->col; j++) {
             ed->lines[i].text[j] = ' ';
+        }
     }
 
     strncpy(ed->fileName, "sem titulo", MAX_FILE_NAME);
@@ -259,7 +261,7 @@ int getClientPipe(ServerData sd, char* user) {
     return -1;
 }
 
-int getClientArrayPosition(ServerData sd, char* user){
+int getClientArrayPosition(ServerData sd, char* user) {
     for (int i = 0; i < sd.maxUsers; i++)
         if (!strncmp(sd.clients[i].username, user, 8)) {
             return i;

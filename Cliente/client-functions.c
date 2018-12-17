@@ -25,7 +25,6 @@
 WINDOW* createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX);
 void configureWindow(WINDOW* janela, int setCores);
 void writeLineNumbers();
-void writeUser(char* name, int line);
 void writeTextLine(char* text, int line);
 void clearEditor(int dimY, int dimX);
 void resetLine(WINDOW* w, int line, int dimX);
@@ -106,7 +105,6 @@ void editor(char* user, EditorData * ed, int fdServ, int* run) { /* TODO receber
 
     writeTitle(ed->fileName);
     writeLineNumbers();
-    //writeUser(user, 4);
 
     wmove(editorWin, 0, 0);
     wrefresh(stdscr);
@@ -292,8 +290,10 @@ void writeLineNumbers() {
  * @param name Nome de utilizador
  * @param line Linha
  */
-void writeUser(char* name, int line) {
-    mvwprintw(userWin, line, 0, "%s", name);
+void writeUsers(EditorData ed) {
+    for (int i = 0; i < ed.lin; i++) {
+        mvwprintw(userWin, i, 0, "%s", ed.clients[i]);
+    }
     wrefresh(userWin);
 }
 

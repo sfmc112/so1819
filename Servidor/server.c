@@ -309,7 +309,7 @@ void* readFromIntPipe(void* arg) {
     ClientMsg msg;
     ServerMsg smsg;
     int nBytes;
-    
+
     InteractionPipe* pipeI = (InteractionPipe*) arg;
     while (sData.runServer) {
         nBytes = read(pipeI->fd, &msg, sizeof (msg));
@@ -317,7 +317,7 @@ void* readFromIntPipe(void* arg) {
         if (nBytes == sizeof (msg)) {
             printf("Msg tipo %d\n", msg.msgType);
             printf("Cliente %s\nLetra %c\n", msg.username, msg.letra);
-            
+
             int indexClient = getClientArrayPosition(sData, msg.username);
             int yPos = sData.clients[indexClient].linePosition;
             int xPos = sData.clients[indexClient].columnPosition;
@@ -332,31 +332,35 @@ void* readFromIntPipe(void* arg) {
                     // TODO MUTEX
                     if (!state) {
                         if (eData.lines[yPos].free == 1) {
+                            strncpy(eData.clients[yPos], msg.username, 9);
                             eData.lines[yPos].free = 0;
+                            strncpy(sData.clients[indexClient].oldText, eData.lines[yPos].text, eData.col);
                             smsg.code = EDITOR_START;
                             state = !state;
                         }
                     } else {
-                        // TODO GRAVAR A LINHA E ASPELL
+                        // TODO GRAVAR A LINHA E ASPELL BUGSSSS
                         puts("Vou perguntar ao Aspell se isto esta bem");
                         printf("A frase e %s\n", eData.lines[yPos].text);
                         if (spellCheckSentence(eData.lines[yPos].text, fdToAspell, fdFromAspell) == 0) {
                             puts("Vou sair do modo de edicao porque a frase esta correta");
                             state = !state;
+                            strncpy(eData.clients[yPos], "\0", 1);
                             eData.lines[yPos].free = 1;
                             smsg.code = EDITOR_UPDATE;
                         }
-                        
+
                     }
                     break;
                 case K_ESC:
                     if (!state) {
-                        puts("Cliente mandou sair");
                         smsg.code = EDITOR_SHUTDOWN;
                     } else {
-                        // TODO COLOCAR A LINHA COMO ESTAVA ANTES
-                        puts("Cliente vai sair do modo de edicao");
                         state = !state;
+                        strncpy(eData.clients[yPos], "        ", 8);
+                        strncpy(eData.lines[yPos].text, sData.clients[indexClient].oldText, eData.col);
+                        eData.lines[yPos].free = 1;
+                        xPos = 0;
                         smsg.code = EDITOR_UPDATE;
                     }
                     break;
@@ -378,7 +382,8 @@ void* readFromIntPipe(void* arg) {
                 case K_CHAR:
                     if (state) {
                         eData.lines[yPos].text[xPos] = msg.letra;
-                        xPos++;
+                        if (xPos < eData.col - 1)
+                            xPos++;
                         smsg.code = EDITOR_UPDATE;
                     }
                     break;
@@ -419,9 +424,7 @@ void* readFromIntPipe(void* arg) {
             sData.clients[indexClient].isEditing = state;
             smsg.cursorLinePosition = yPos;
             smsg.cursorColumnPosition = xPos;
-            
             printf("A enviar msg tipo %d no descritor %d\n", smsg.code, sData.clients[indexClient].fdPipeClient);
-            
             write(sData.clients[indexClient].fdPipeClient, &smsg, sizeof (smsg));
         }
     }
