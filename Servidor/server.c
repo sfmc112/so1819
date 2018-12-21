@@ -19,13 +19,12 @@ void configuraSinal(int sinal);
 void createNamedPipesServer(InteractionPipe* pipes);
 void openNamedPipesServer(InteractionPipe* pipes);
 void initializeInteractivePipes(InteractionPipe* pipes);
-
 void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes);
 void* readFromMainPipe(void* arg);
 void* readFromIntPipe(void* arg);
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
 void testaAspell();
-
+void writeToAClient(ClientData c, ServerMsg smsg);
 void writeToAllClients(ServerData sd, ServerMsg smsg);
 
 EditorData eData;
@@ -429,21 +428,28 @@ void* readFromIntPipe(void* arg) {
             sData.clients[indexClient].linePosition = yPos;
             sData.clients[indexClient].columnPosition = xPos;
             sData.clients[indexClient].isEditing = state;
-
-            writeToAllClients(sData, smsg);
+            
+            if (smsg.code == EDITOR_UPDATE || smsg.code == EDITOR_START)
+                writeToAllClients(sData, smsg);
+            else
+                writeToAClient(sData.clients[indexClient], smsg);
         }
     }
     return NULL;
+}
+
+void writeToAClient(ClientData c, ServerMsg smsg) {
+    printf("A enviar msg tipo %d no descritor %d\n", smsg.code, c.fdPipeClient);
+    smsg.cursorLinePosition = c.linePosition;
+    smsg.cursorColumnPosition = c.columnPosition;
+    write(c.fdPipeClient, &smsg, sizeof (smsg));
 }
 
 void writeToAllClients(ServerData sd, ServerMsg smsg) {
     int i;
     for (i = 0; i < sd.maxUsers; i++) {
         if (sd.clients[i].valid) {
-            printf("A enviar msg tipo %d no descritor %d\n", smsg.code, sData.clients[i].fdPipeClient);
-            smsg.cursorLinePosition = sData.clients[i].linePosition;
-            smsg.cursorColumnPosition = sData.clients[i].columnPosition;
-            write(sData.clients[i].fdPipeClient, &smsg, sizeof (smsg));
+            writeToAClient(sd.clients[i], smsg);
         }
     }
 }

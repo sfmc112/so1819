@@ -110,6 +110,7 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* T
     configureWindow(titleWin, COLOR_PAIR(1));
 
     writeTitle(ed->fileName);
+    writeUsers(*ed);
     writeLineNumbers();
 
     wmove(editorWin, 0, 0);
