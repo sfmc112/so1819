@@ -116,21 +116,6 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* T
     wrefresh(stdscr);
     wrefresh(editorWin);
 
-    /*
-        char* doc[WIN_EDITOR_MAX_Y] = {
-            "Ola tudo fixe isto e o documento brutal",
-            "vai ter duas linhas e ja e bem bom",
-            "oops afinal tem mais, isto e so um teste!"
-        };
-        for (int i = 0; i < WIN_EDITOR_MAX_Y; i++) {
-            lines[i].free = 1;
-            for (int j = 0; j < WIN_EDITOR_MAX_X; j++) {
-                lines[i].text[j] = ' ';
-            }
-
-        }
-     */
-
     clearEditor(ed->lin, ed->col);
     writeDocument(ed->lines, ed->lin);
     wrefresh(editorWin);
@@ -142,15 +127,9 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* T
     FD_SET(STDIN_FILENO, &fd_leitura);
     FD_SET(fdCli, &fd_leitura);
 
-    int key; // x = 0, y = 0;
-    //char linha[WIN_EDITOR_MAX_X];
-    /*
-        mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
-        refreshCursor(y, x);
-     */
+    int key;
     refreshCursor(0, 0);
-
-    //msg.linePosition = msg.columnPosition = 0;
+    
     while (*run) {
         fd_leitura_temp = fd_leitura;
         switch (select(32, &fd_leitura_temp, NULL, NULL, NULL)) {
@@ -173,65 +152,13 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* T
     return;
 }
 
-/**
- * Esta função é responsável por gerir a edição de linha.
- * @param y Posição Y do cursor
- * @param x Posição X do cursor
- * @param linha linha de texto
- */
-void editMode(int y, int x, char* linha) {
-    int key;
-    char linhaTemp[WIN_EDITOR_MAX_X];
-    strncpy(linhaTemp, linha, WIN_EDITOR_MAX_X);
-    mvwprintw(stdscr, 19, 0, "Em modo de edicao   ");
-    refreshCursor(y, x);
-    while ((key = getch()) != KEY_ESC) {
-        switch (key) {
-            case KEY_LEFT:
-                if (x > 0)
-                    x--;
-                break;
-            case KEY_RIGHT:
-                if (x < WIN_EDITOR_MAX_X)
-                    x++;
-                break;
-            case KEY_UP:
-                break;
-            case KEY_DOWN:
-                break;
-            case KEY_ENTR:
-                resetLine(userWin, y, WIN_USER_MAX_X);
-                return;
-            case KEY_BACKSPACE:
-                backSpaceKey(linha, x, y);
-                if (x > 0)
-                    x--;
-                break;
-            case KEY_DELETE:
-                deleteKey(linha, x, y);
-                break;
-            default:
-                writeKey(key, linha, x);
-                resetLine(editorWin, y, WIN_EDITOR_MAX_X);
-                writeTextLine(linha, y);
-                if (x < WIN_EDITOR_MAX_X - 1)
-                    x++;
-                break;
-        }
-        if (key != KEY_ESC)
-            refreshCursor(y, x);
-    }
-    resetLine(userWin, y, WIN_USER_MAX_X);
-    strncpy(linha, linhaTemp, WIN_EDITOR_MAX_X);
-}
-
 void writeToServer(int fdServ, int* run, char* user) {
     int key;
     ClientMsg msg;
     strncpy(msg.username, user, 9);
 
     //read(STDIN_FILENO, &key, sizeof (char));
-    scanf("%d", &key);
+    key = getch();
 
     switch (key) {
         case KEY_LEFT:
@@ -263,7 +190,6 @@ void writeToServer(int fdServ, int* run, char* user) {
             msg.letra = key;
     }
     if (*run) {
-        //getyx(editorWin, msg.linePosition, msg.columnPosition);
         write(fdServ, &msg, sizeof (msg));
     }
 }
@@ -281,7 +207,6 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
                 break;
             case EDITOR_SHUTDOWN:
                 *run = 0;
-                //close(STDIN_FILENO);
                 break;
             default:
                 *ed = msg.ed;
@@ -482,15 +407,3 @@ void deleteKey(char* linha, int x, int y) {
     resetLine(editorWin, y, WIN_EDITOR_MAX_X);
     writeTextLine(linha, y);
 }
-
-/**
- * Função responsável por redefinir o comportamento de sinal.
- * @param sinal o sinal que o programa recebeu
- */
-/*
-void configuraSinal(int sinal) {
-    if (signal(sinal, trataSinal) == SIG_ERR) {
-        perror("Erro a tratar sinal!");
-    }
-}
- */

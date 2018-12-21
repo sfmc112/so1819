@@ -57,8 +57,6 @@ int main(int argc, char** argv) {
     
     startEditor();
 
-    // Login Efetuado com sucesso
-    //createClientStartingThreads(&idEditor, &idMyPipe);
     //A aplicaçao vai terminar...
     exitClient();
 }
@@ -159,28 +157,6 @@ void sendLoginToServer(char* user) {
 }
 
 /**
- * Função responsável por criar as threads.
- * @param idEditor Thread idEditor
- * @param idMyPipe Thread idMyPipe
- */
-/*
-void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
-    int err;
-    err = pthread_create(idEditor, NULL, startEditor, NULL);
-    if (err)
-        printf("[CLIENTE] Nao foi possível criar a thread :[%s]\n", strerror(err));
-    else
-        printf("[CLIENTE] A thread responsavel pelo editor foi criada!\n");
-
-    err = pthread_create(idMyPipe, NULL, readFromMyPipe, NULL);
-    if (err)
-        printf("[CLIENTE] Nao foi possível criar a thread :[%s]\n", strerror(err));
-    else
-        printf("[CLIENTE] A thread responsavel pela leitura do pipe foi criada!\n");
-}
-*/
-
-/**
  * Função responsável por iniciar o editor.
  * @return NULL
  */
@@ -188,45 +164,6 @@ void startEditor() {
     //TODO mutex
     editor(user, &ed, fdMyPipe, fdSv, &runClient);
 }
-
-/**
- * Função responsável por ler do pipe principal do servidor.
- * @return NULL
- */
-/*
-void* readFromMyPipe() {
-    int nBytes;
-    ServerMsg msg;
-    int serverUp = 1;
-
-    while (serverUp && runClient) {
-        nBytes = read(fdMyPipe, &msg, sizeof (msg));
-        if (nBytes == sizeof (msg)) {
-            switch (msg.code) {
-                case SERVER_SHUTDOWN:
-                    serverUp = 0;
-                    break;
-                case EDITOR_SHUTDOWN:
-                    runClient = 0;
-                    close(STDIN_FILENO);
-                    break;
-                default:
-                    ed = msg.ed;
-                    writeUsers(ed);
-                    writeDocument(ed.lines, ed.lin);
-                    refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition);
-                    break;
-            }
-        }
-    }
-    if (!serverUp)
-        exitServerShutdown();
-    else
-        exitClient();
-
-    return NULL;
-}
-*/
 
 /**
  * Função responsável por fechar a sessão porque o servidor foi desligado, mas fechando primeiramente os pipes e apagando o seu próprio pipe.

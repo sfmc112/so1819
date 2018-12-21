@@ -26,6 +26,8 @@ void* readFromIntPipe(void* arg);
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
 void testaAspell();
 
+void writeToAllClients(ServerData sd, ServerMsg smsg);
+
 EditorData eData;
 ServerData sData;
 int fdToAspell = -1;
@@ -342,11 +344,11 @@ void* readFromIntPipe(void* arg) {
                         // TODO GRAVAR A LINHA E ASPELL BUGSSSS
                         puts("Vou perguntar ao Aspell se isto esta bem");
                         printf("A frase e %s\n", eData.lines[yPos].text);
-                        
+
                         char temp[DEFAULT_MAXCOLUMNS];
                         strncpy(temp, eData.lines[yPos].text, DEFAULT_MAXCOLUMNS - 1);
-                        temp[DEFAULT_MAXCOLUMNS-1] = '\0';
-                        
+                        temp[DEFAULT_MAXCOLUMNS - 1] = '\0';
+
                         if (spellCheckSentence(temp, fdToAspell, fdFromAspell) == 0) {
                             puts("Vou sair do modo de edicao porque a frase esta correta");
                             state = !state;
@@ -427,13 +429,23 @@ void* readFromIntPipe(void* arg) {
             sData.clients[indexClient].linePosition = yPos;
             sData.clients[indexClient].columnPosition = xPos;
             sData.clients[indexClient].isEditing = state;
-            smsg.cursorLinePosition = yPos;
-            smsg.cursorColumnPosition = xPos;
-            printf("A enviar msg tipo %d no descritor %d\n", smsg.code, sData.clients[indexClient].fdPipeClient);
-            write(sData.clients[indexClient].fdPipeClient, &smsg, sizeof (smsg));
+
+            writeToAllClients(sData, smsg);
         }
     }
     return NULL;
+}
+
+void writeToAllClients(ServerData sd, ServerMsg smsg) {
+    int i;
+    for (i = 0; i < sd.maxUsers; i++) {
+        if (sd.clients[i].valid) {
+            printf("A enviar msg tipo %d no descritor %d\n", smsg.code, sData.clients[i].fdPipeClient);
+            smsg.cursorLinePosition = sData.clients[i].linePosition;
+            smsg.cursorColumnPosition = sData.clients[i].columnPosition;
+            write(sData.clients[i].fdPipeClient, &smsg, sizeof (smsg));
+        }
+    }
 }
 
 void testaAspell() {
