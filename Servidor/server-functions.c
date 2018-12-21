@@ -58,11 +58,13 @@ void resetMEDITLines(EditorData* ed) {
 
     for (i = 0; i < ed->lin; i++) {
         ed->lines[i].free = 1;
-        for (j = 0; j < ed->col; j++)
+        strncpy(ed->clients[i], "\0", 1);
+        for (j = 0; j < ed->col; j++) {
             ed->lines[i].text[j] = ' ';
+        }
     }
 
-    strncpy(ed->fileName, "nenhum ficheiro carregado", MAX_FILE_NAME);
+    strncpy(ed->fileName, "sem titulo", MAX_FILE_NAME);
 }
 
 /**
@@ -133,6 +135,8 @@ void initializeServerData(ServerData* sd) {
     sd->numInteractivePipes = NUM_INTERACTIVE_PIPES;
     for (int i = 0; i < DEFAULT_MAXUSERS; i++) {
         sd->clients[i].valid = 0;
+        sd->clients[i].fdPipeClient = -1;
+        sd->clients[i].columnPosition = sd->clients[i].linePosition = 0;
     }
 }
 
@@ -162,6 +166,7 @@ void registerClient(char* username, ServerData* sData, int pos, int fdCli, int f
     strncpy(sData->clients[pos].username, username, 9);
     sData->clients[pos].fdPipeClient = fdCli;
     sData->clients[pos].fdIntPipe = fdIntPipe;
+    sData->clients[pos].columnPosition = sData->clients[pos].linePosition = 0;
 }
 
 /**
@@ -227,4 +232,55 @@ void closeAndDeleteServerPipes(int fdMainPipe, ServerData* sd, InteractionPipe* 
         closeNamedPipe(pipes[i].fd);
         deleteNamedPipe(pipes[i].pipeName);
     }
+}
+
+/**
+ * Função responsável por mover todos os caractéres para a esquerda.
+ * @param linha linha de texto
+ * @param x posição no array
+ * @param max_x numero colunas
+ */
+void moveAllToTheLeft(char* linha, int x, int max_x) {
+    int max = max_x - 1;
+    for (; x < max; x++)
+        linha[x] = linha[x + 1];
+    linha[max] = ' ';
+}
+
+/**
+ * Função é responsável por mover o texto a partir de uma posição X para a
+ * direita.
+ * @param linha linha de texto
+ * @param x coluna
+ * @return 0 se falhou, 1 caso contrário
+ */
+int moveAllToTheRight(char* linha, int x, int max_x) {
+    int max = max_x - 1;
+    if (linha[max] != ' ')
+        return 0;
+    for (; max > x; max--)
+        linha[max] = linha[max - 1];
+    return 1;
+}
+
+/**
+ * Função responsável por encontrar o descritor do pipe do cliente pelo username.
+ * @param sd Estrutura de Dados do Servidor
+ * @param user Username do Cliente
+ * @return descritor do pipe
+ */
+int getClientPipe(ServerData sd, char* user) {
+    for (int i = 0; i < sd.maxUsers; i++)
+        if (!strncmp(sd.clients[i].username, user, 8)) {
+            return sd.clients[i].fdPipeClient;
+        }
+    return -1;
+}
+
+int getClientArrayPosition(ServerData sd, char* user) {
+    for (int i = 0; i < sd.maxUsers; i++)
+        if (!strncmp(sd.clients[i].username, user, 8)) {
+            return i;
+        }
+    return -1;
 }

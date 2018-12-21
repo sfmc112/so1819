@@ -7,6 +7,9 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/select.h>
+#include <stdlib.h>
+#include <pthread.h>
 #include "client-defaults.h"
 
 #define TITLE "MEDIT EDITOR--------------------filename.xpto-----------------------------------"
@@ -25,19 +28,22 @@
 WINDOW* createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX);
 void configureWindow(WINDOW* janela, int setCores);
 void writeLineNumbers();
-void writeUser(char* name, int line);
-void writeDocument(Line *text, int nLines);
 void writeTextLine(char* text, int line);
 void clearEditor(int dimY, int dimX);
 void resetLine(WINDOW* w, int line, int dimX);
-void writeTitle();
-void refreshCursor(int y, int x);
+void writeTitle(char* titulo);
 void editMode(int y, int x, char* linha);
 void writeKey(int key, char* linha, int x);
 void getLinha(char* linha, int y);
-void backSpaceKey(char* linha, int x, int y);
 void deleteKey(char* linha, int x, int y);
-void editor(char* user, EditorData * ed);
+void backSpaceKey(char* linha, int x, int y);
+
+void writeToServer(int fdServ, int* run, char* user);
+void readFromServer(int fdCli, int* run, EditorData* ed);
+
+// Mutexes
+pthread_mutex_t mutexEditor;
+
 //WINDOW* masterWin;
 WINDOW* titleWin;
 WINDOW* userWin;
@@ -84,7 +90,8 @@ void loginSession(char* user) {
 /**
  * Função responsável por tudo acerca do editor.
  */
-void editor(char* user, EditorData * ed) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
+void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
+    puts("Entrei no editor");
     initscr();
     start_color();
     clear();
@@ -99,129 +106,133 @@ void editor(char* user, EditorData * ed) { /* TODO receber nome do utilizador e 
     titleWin = createSubWindow(stdscr, WIN_TITLE_MAX_Y, WIN_TITLE_MAX_X, 0, 0);
     userWin = createSubWindow(stdscr, WIN_USER_MAX_Y, WIN_USER_MAX_X, WIN_TITLE_MAX_Y + 1, 0);
     lineWin = createSubWindow(stdscr, WIN_LINENUM_MAX_Y, WIN_LINENUM_MAX_X, WIN_TITLE_MAX_Y + 1, WIN_USER_MAX_X + 1);
-    editorWin = createSubWindow(stdscr, WIN_EDITOR_MAX_Y, WIN_EDITOR_MAX_X, WIN_TITLE_MAX_Y + 1, WIN_LINENUM_MAX_X + WIN_USER_MAX_X + 2);
+    editorWin = createSubWindow(stdscr, ed->lin, ed->col, WIN_TITLE_MAX_Y + 1, WIN_LINENUM_MAX_X + WIN_USER_MAX_X + 2);
 
     configureWindow(userWin, COLOR_PAIR(3));
     configureWindow(lineWin, COLOR_PAIR(3));
     configureWindow(editorWin, COLOR_PAIR(2));
     configureWindow(titleWin, COLOR_PAIR(1));
 
-    writeTitle();
+    writeTitle(ed->fileName);
+    writeUsers(*ed);
     writeLineNumbers();
-    //writeUser(user, 4);
 
     wmove(editorWin, 0, 0);
     wrefresh(stdscr);
     wrefresh(editorWin);
 
-    char* doc[WIN_EDITOR_MAX_Y] = {
-        "Ola tudo fixe isto e o documento brutal",
-        "vai ter duas linhas e ja e bem bom",
-        "oops afinal tem mais, isto e so um teste!"
-    };
-    for (int i = 0; i < WIN_EDITOR_MAX_Y; i++) {
-        lines[i].free = 1;
-        for (int j = 0; j < WIN_EDITOR_MAX_X; j++) {
-            lines[i].text[j] = ' ';
-        }
-
-    }
-
-    clearEditor(WIN_EDITOR_MAX_Y, WIN_EDITOR_MAX_X);
-    writeDocument(lines, WIN_EDITOR_MAX_Y);
+    clearEditor(ed->lin, ed->col);
+    writeDocument(ed->lines, ed->lin);
     wrefresh(editorWin);
 
-    int key, x = 0, y = 0;
-    //char linha[WIN_EDITOR_MAX_X];
-    mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
-    refreshCursor(y, x);
+    pthread_mutex_init(&mutexEditor, NULL);
 
-    while ((key = getch()) != KEY_ESC) {
-        switch (key) {
-            case KEY_LEFT:
-                if (x > 0)
-                    x--;
+    //Preparar FD para select
+    fd_set fd_leitura, fd_leitura_temp;
+    FD_ZERO(&fd_leitura);
+    FD_ZERO(&fd_leitura_temp);
+    FD_SET(STDIN_FILENO, &fd_leitura);
+    FD_SET(fdCli, &fd_leitura);
+
+    int key;
+    refreshCursor(0, 0);
+
+    while (*run) {
+        fd_leitura_temp = fd_leitura;
+        switch (select(32, &fd_leitura_temp, NULL, NULL, NULL)) {
+            case -1:
+                endwin();
+                puts("Erro no select");
+                *run = 0;
                 break;
-            case KEY_RIGHT:
-                if (x < WIN_EDITOR_MAX_X)
-                    x++;
+            case 0:
                 break;
-            case KEY_UP:
-                if (y > 0)
-                    y--;
-                break;
-            case KEY_DOWN:
-                if (y < WIN_EDITOR_MAX_Y)
-                    y++;
-                break;
-            case KEY_ENTR:
-                //TODO SE LINHA ESTÁ LIVRE, COLOCA OCUPADA E COMEÇA EDIÇÃO
-                writeUser(user, y);
-                //getLinha(linha, y);
-                lines[y].free = 0;
-                editMode(y, x, lines[y].text);
-                writeDocument(lines, WIN_EDITOR_MAX_Y);
-                lines[y].free = 1;
-                // TODO DESOCUPA A LINHA
-                mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
-                break;
+            default:
+                if (FD_ISSET(STDIN_FILENO, &fd_leitura_temp)) {
+                    writeToServer(fdServ, run, user);
+                } else if (FD_ISSET(fdCli, &fd_leitura_temp)) {
+                    readFromServer(fdCli, run, ed);
+                }
         }
-        refreshCursor(y, x);
     }
     endwin();
     return;
 }
 
-/**
- * Esta função é responsável por gerir a edição de linha.
- * @param y Posição Y do cursor
- * @param x Posição X do cursor
- * @param linha linha de texto
- */
-void editMode(int y, int x, char* linha) {
+void writeToServer(int fdServ, int* run, char* user) {
     int key;
-    char linhaTemp[WIN_EDITOR_MAX_X];
-    strncpy(linhaTemp, linha, WIN_EDITOR_MAX_X);
-    mvwprintw(stdscr, 19, 0, "Em modo de edicao   ");
-    refreshCursor(y, x);
-    while ((key = getch()) != KEY_ESC) {
-        switch (key) {
-            case KEY_LEFT:
-                if (x > 0)
-                    x--;
+    ClientMsg msg;
+
+    key = getch();
+
+    pthread_mutex_lock(&mutexEditor);
+
+    strncpy(msg.username, user, 9);
+
+    switch (key) {
+        case KEY_LEFT:
+            msg.msgType = MOVE_LEFT;
+            break;
+        case KEY_RIGHT:
+            msg.msgType = MOVE_RIGHT;
+            break;
+        case KEY_UP:
+            msg.msgType = MOVE_UP;
+            break;
+        case KEY_DOWN:
+            msg.msgType = MOVE_DOWN;
+            break;
+        case KEY_ENTR:
+            msg.msgType = K_ENTER;
+            break;
+        case KEY_BACKSPACE:
+            msg.msgType = K_BACKSPACE;
+            break;
+        case KEY_DELETE:
+            msg.msgType = K_DEL;
+            break;
+        case KEY_ESC:
+            msg.msgType = K_ESC;
+            break;
+        default:
+            msg.msgType = K_CHAR;
+            msg.letra = key;
+    }
+    if (*run) {
+        write(fdServ, &msg, sizeof (msg));
+    }
+    pthread_mutex_unlock(&mutexEditor);
+}
+
+void readFromServer(int fdCli, int* run, EditorData *ed) {
+    int nBytes;
+    ServerMsg msg;
+    int serverUp = 1;
+
+    nBytes = read(fdCli, &msg, sizeof (msg));
+
+    pthread_mutex_lock(&mutexEditor);
+
+    if (nBytes == sizeof (msg)) {
+        switch (msg.code) {
+            case SERVER_SHUTDOWN:
+                serverUp = 0;
                 break;
-            case KEY_RIGHT:
-                if (x < WIN_EDITOR_MAX_X)
-                    x++;
-                break;
-            case KEY_UP:
-                break;
-            case KEY_DOWN:
-                break;
-            case KEY_ENTR:
-                resetLine(userWin, y, WIN_USER_MAX_X);
-                return;
-            case KEY_BACKSPACE:
-                backSpaceKey(linha, x, y);
-                if (x > 0)
-                    x--;
-                break;
-            case KEY_DELETE:
-                deleteKey(linha, x, y);
+            case EDITOR_SHUTDOWN:
+                *run = 0;
                 break;
             default:
-                writeKey(key, linha, x);
-                resetLine(editorWin, y, WIN_EDITOR_MAX_X);
-                writeTextLine(linha, y);
-                if (x < WIN_EDITOR_MAX_X - 1)
-                    x++;
+                *ed = msg.ed;
+                writeUsers(*ed);
+                writeDocument(ed->lines, ed->lin);
+                refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition);
                 break;
         }
-        if (key != KEY_ESC)
-            refreshCursor(y, x);
     }
-    resetLine(userWin, y, WIN_USER_MAX_X);
-    strncpy(linha, linhaTemp, WIN_EDITOR_MAX_X);
+    pthread_mutex_unlock(&mutexEditor);
+
+    if (!serverUp)
+        exitServerShutdown();
 }
 
 /**
@@ -252,8 +263,8 @@ void configureWindow(WINDOW* janela, int setCores) {
 /**
  * Função responsável por escrever na janela titleWin um título.
  */
-void writeTitle() {
-    mvwprintw(titleWin, 0, 0, "%s", TITLE);
+void writeTitle(char* titulo) {
+    mvwprintw(titleWin, 0, 0, "%s - MEDIT", titulo);
 }
 
 /**
@@ -271,8 +282,10 @@ void writeLineNumbers() {
  * @param name Nome de utilizador
  * @param line Linha
  */
-void writeUser(char* name, int line) {
-    mvwprintw(userWin, line, 0, "%s", name);
+void writeUsers(EditorData ed) {
+    for (int i = 0; i < ed.lin; i++) {
+        mvwprintw(userWin, i, 0, "%s", ed.clients[i]);
+    }
     wrefresh(userWin);
 }
 
@@ -409,15 +422,3 @@ void deleteKey(char* linha, int x, int y) {
     resetLine(editorWin, y, WIN_EDITOR_MAX_X);
     writeTextLine(linha, y);
 }
-
-/**
- * Função responsável por redefinir o comportamento de sinal.
- * @param sinal o sinal que o programa recebeu
- */
-/*
-void configuraSinal(int sinal) {
-    if (signal(sinal, trataSinal) == SIG_ERR) {
-        perror("Erro a tratar sinal!");
-    }
-}
-*/

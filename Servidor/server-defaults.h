@@ -3,7 +3,6 @@
 
 #include "biblioteca.h"
 #define MAX_SIZE_FILENAME 50
-
 typedef struct _clientdata {
     // Estado do cliente:\n - Ativo = 1\n - Inativo = 0
     int valid;
@@ -13,6 +12,15 @@ typedef struct _clientdata {
     int fdIntPipe;
     // Descritor do named pipe do cliente
     int fdPipeClient;
+    // Linha do editor onde o cliente se encontra
+    int linePosition;
+    // Coluna do editor onde o cliente se encontra
+    int columnPosition;
+    // Variável de controlo de modo de edição e navegação
+    int isEditing;
+    // Texto que a linha possuía antes de entrar em edição
+    // TODO MUDAR O SIZE
+    char oldText[DEFAULT_MAXCOLUMNS];
 } ClientData;
 
 typedef struct _serverdata {

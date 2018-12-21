@@ -5,19 +5,18 @@
 #include <unistd.h>
 #include "biblioteca.h"
 #include "client-functions.h"
-#include <pthread.h>
 #include <signal.h>
+#include <pthread.h>
 #include <ncurses.h>
 
 void sendLoginToServer(char* user);
-void exitClient();
 void exitLoginFailure();
 void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe);
-void* startEditor();
+void startEditor();
 void* readFromMyPipe();
 void configureSignalBeforeLogin(int sinal);
 void configureSignalAfterLogin(int sinal);
-void exitServerShutdown();
+
 
 int runClient = 1;
 int fdMyPipe = -1, fdSv = -1;
@@ -25,8 +24,6 @@ char user[9];
 char myPipe[PIPE_NAME_MAX];
 char servPipe[PIPE_NAME_MAX];
 EditorData ed;
-pthread_t idEditor;
-pthread_t idMyPipe;
 
 int main(int argc, char** argv) {
     configureSignalBeforeLogin(SIGINT);
@@ -55,9 +52,9 @@ int main(int argc, char** argv) {
     sendLoginToServer(user);
 
     configureSignalAfterLogin(SIGINT);
+    
+    startEditor();
 
-    // Login Efetuado com sucesso
-    createClientStartingThreads(&idEditor, &idMyPipe);
     //A aplicaçao vai terminar...
     exitClient();
 }
@@ -91,7 +88,6 @@ void configureSignalBeforeLogin(int sinal) {
  */
 void signalBehaviorAfterLogin(int numSinal) {
     if (numSinal == SIGINT) {
-        pthread_cancel(idEditor);
         puts("[CLIENTE] A thread responsavel pelo editor terminou!");
         exitClient();
     }
@@ -158,66 +154,12 @@ void sendLoginToServer(char* user) {
 }
 
 /**
- * Função responsável por criar as threads.
- * @param idEditor Thread idEditor
- * @param idMyPipe Thread idMyPipe
- */
-void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
-    int err;
-    err = pthread_create(idEditor, NULL, startEditor, NULL);
-    if (err)
-        printf("[CLIENTE] Nao foi possível criar a thread :[%s]\n", strerror(err));
-    else
-        printf("[CLIENTE] A thread responsavel pelo editor foi criada!\n");
-
-    err = pthread_create(idMyPipe, NULL, readFromMyPipe, NULL);
-    if (err)
-        printf("[CLIENTE] Nao foi possível criar a thread :[%s]\n", strerror(err));
-    else
-        printf("[CLIENTE] A thread responsavel pela leitura do pipe foi criada!\n");
-}
-
-/**
  * Função responsável por iniciar o editor.
  * @return NULL
  */
-void* startEditor() {
+void startEditor() {
     //TODO mutex
-    editor(user, &ed);
-    runClient = 0;
-    return NULL;
-}
-
-/**
- * Função responsável por ler do pipe principal do servidor.
- * @return NULL
- */
-void* readFromMyPipe() {
-    int nBytes;
-    ServerMsg msg;
-    int serverUp = 1;
-
-    while (serverUp && runClient) {
-        nBytes = read(fdMyPipe, &msg, sizeof (msg));
-        if (nBytes == sizeof (msg)) {
-            switch (msg.code) {
-                case SERVER_SHUTDOWN:
-                    serverUp = 0;
-                    break;
-                case EDITOR_UPDATE:
-                    // TODO Terá que ser protegido por Mutex
-                    ed = msg.ed;
-                    // Atualizar Ecra
-                    clearEditor(msg.ed.lin, msg.ed.col);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-    if (!serverUp)
-        exitServerShutdown();
-    return NULL;
+    editor(user, &ed, fdMyPipe, fdSv, &runClient);
 }
 
 /**
@@ -225,13 +167,8 @@ void* readFromMyPipe() {
  */
 void exitServerShutdown() {
     endwin();
-    pthread_cancel(idEditor);
-    puts("[CLIENTE] A thread responsavel pelo editor terminou!");
 
     printf("[CLIENTE] O servidor foi desligado!\n[CLIENTE] A aplicação vai encerrar....\n");
-
-    pthread_join(idMyPipe, NULL);
-    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal terminou!");
 
     if (fdMyPipe >= 0) {
         puts("[CLIENTE] Vou fechar o meu pipe!");
@@ -253,8 +190,6 @@ void exitServerShutdown() {
 void exitClient() {
 
     printf("[CLIENTE] A aplicação vai encerrar....\n");
-    pthread_join(idEditor, NULL);
-    puts("[CLIENTE] A thread responsavel pelo editor terminou!");
     endwin();
 
     ClientMsg msg;
@@ -266,9 +201,6 @@ void exitClient() {
 
     runClient = 0;
     write(fdMyPipe, "\n", 1);
-
-    pthread_join(idMyPipe, NULL);
-    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal terminou!");
 
     if (fdMyPipe >= 0) {
         puts("[CLIENTE] Vou fechar o meu pipe!");
