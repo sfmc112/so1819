@@ -19,7 +19,7 @@ void configuraSinal(int sinal);
 void createNamedPipesServer(InteractionPipe* pipes);
 void openNamedPipesServer(InteractionPipe* pipes);
 void initializeInteractivePipes(InteractionPipe* pipes);
-void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes);
+void createServerStartingThreads(pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes);
 void* readFromMainPipe(void* arg);
 void* readFromIntPipe(void* arg);
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
@@ -32,6 +32,11 @@ ServerData sData;
 int fdToAspell = -1;
 int fdFromAspell = -1;
 int fdMainPipe = -1;
+
+// Mutexes
+//pthread_mutex_t mutexAspell;
+pthread_mutex_t mutexClientData;
+//pthread_mutex_t mutexEditorData;
 
 int main(int argc, char** argv) {
     if (verifySingleInstance() < 0)
@@ -55,14 +60,18 @@ int main(int argc, char** argv) {
 
     resetMEDITLines(&eData);
 
+    //testaAspell();
+
+    // Inicializar mutexes
+    //mutexAspell = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_init(&mutexClientData, NULL);
+    //mutexEditorData = PTHREAD_MUTEX_INITIALIZER;
+
     //Inicializar threads;
-    pthread_t idCommands;
     pthread_t idMainPipe;
     pthread_t idIntPipes[sData.numInteractivePipes];
 
-    testaAspell();
-
-    createServerStartingThreads(&idCommands, &idMainPipe, idIntPipes, interactivePipes);
+    createServerStartingThreads(&idMainPipe, idIntPipes, interactivePipes);
 
     readCommands();
 
@@ -214,18 +223,10 @@ void initializeInteractivePipes(InteractionPipe * pipes) {
  * @param mainpipe Thread para ler do pipe principal do servidor
  * @param intpipes Array dos Pipes Interativos
  */
-void createServerStartingThreads(pthread_t* commands, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe * pipes) {
+void createServerStartingThreads(pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe * pipes) {
     puts("[SERVIDOR] Vao ser criadas as threads!");
 
     int err;
-
-    /*
-    err = pthread_create(commands, NULL, readCommands, NULL);
-    if (err)
-        printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
-    else
-        printf("[SERVIDOR] A thread responsavel pela leitura dos comandos foi criada!\n");
-     */
 
     err = pthread_create(mainpipe, NULL, readFromMainPipe, (void*) pipes);
     if (err)
@@ -281,6 +282,7 @@ void* readFromMainPipe(void* arg) {
             printf("\nDescritor do cliente %s: %d\n\n", login.username, fdCli);
             if (fdCli == -1)
                 continue;
+            pthread_mutex_lock(&mutexClientData);
             pos = getFirstAvailablePosition(sData);
             //printf("Pos: %d\n", pos);
             if (!checkUsername(login.username) || checkUserOnline(login.username, sData) || pos == -1) {
@@ -295,6 +297,7 @@ void* readFromMainPipe(void* arg) {
                 printf("[SERVIDOR] O utilizador %s conectou-se!\n", login.username);
                 printf("Descritor atual %d\n", sData.clients[getClientArrayPosition(sData, login.username)].fdPipeClient);
             }
+            pthread_mutex_unlock(&mutexClientData);
             write(fdCli, &msg, sizeof (msg));
         }
     }
@@ -314,6 +317,7 @@ void* readFromIntPipe(void* arg) {
     InteractionPipe* pipeI = (InteractionPipe*) arg;
     while (sData.runServer) {
         nBytes = read(pipeI->fd, &msg, sizeof (msg));
+        pthread_mutex_lock(&mutexClientData);
         smsg.code = EDITOR_ERROR;
         if (nBytes == sizeof (msg)) {
             printf("Msg tipo %d\n", msg.msgType);
@@ -387,10 +391,12 @@ void* readFromIntPipe(void* arg) {
                     break;
                 case K_CHAR:
                     if (state) {
-                        eData.lines[yPos].text[xPos] = msg.letra;
-                        if (xPos < eData.col - 1)
-                            xPos++;
-                        smsg.code = EDITOR_UPDATE;
+                        if (moveAllToTheRight(eData.lines[yPos].text, xPos, eData.col)) {
+                            eData.lines[yPos].text[xPos] = msg.letra;
+                            if (xPos < eData.col - 1)
+                                xPos++;
+                            smsg.code = EDITOR_UPDATE;
+                        }
                     }
                     break;
                 case MOVE_UP:
@@ -428,12 +434,13 @@ void* readFromIntPipe(void* arg) {
             sData.clients[indexClient].linePosition = yPos;
             sData.clients[indexClient].columnPosition = xPos;
             sData.clients[indexClient].isEditing = state;
-            
+
             if (smsg.code == EDITOR_UPDATE || smsg.code == EDITOR_START)
                 writeToAllClients(sData, smsg);
             else
                 writeToAClient(sData.clients[indexClient], smsg);
         }
+        pthread_mutex_unlock(&mutexClientData);
     }
     return NULL;
 }

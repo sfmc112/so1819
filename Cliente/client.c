@@ -6,6 +6,7 @@
 #include "biblioteca.h"
 #include "client-functions.h"
 #include <signal.h>
+#include <pthread.h>
 #include <ncurses.h>
 
 void sendLoginToServer(char* user);

@@ -248,6 +248,22 @@ void moveAllToTheLeft(char* linha, int x, int max_x) {
 }
 
 /**
+ * Função é responsável por mover o texto a partir de uma posição X para a
+ * direita.
+ * @param linha linha de texto
+ * @param x coluna
+ * @return 0 se falhou, 1 caso contrário
+ */
+int moveAllToTheRight(char* linha, int x, int max_x) {
+    int max = max_x - 1;
+    if (linha[max] != ' ')
+        return 0;
+    for (; max > x; max--)
+        linha[max] = linha[max - 1];
+    return 1;
+}
+
+/**
  * Função responsável por encontrar o descritor do pipe do cliente pelo username.
  * @param sd Estrutura de Dados do Servidor
  * @param user Username do Cliente

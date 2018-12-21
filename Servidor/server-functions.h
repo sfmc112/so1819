@@ -27,4 +27,5 @@ void removeClient(char* username, ServerData* sd);
 //int getClientPipe(ServerData sd, char* user);
 int getClientArrayPosition(ServerData sd, char* user);
 void moveAllToTheLeft(char* linha, int x, int max_x);
+int moveAllToTheRight(char* linha, int x, int max_x);
 #endif /* SERVER_FUNCTIONS_H */

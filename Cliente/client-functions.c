@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "client-defaults.h"
 
 #define TITLE "MEDIT EDITOR--------------------filename.xpto-----------------------------------"
@@ -39,6 +40,9 @@ void backSpaceKey(char* linha, int x, int y);
 
 void writeToServer(int fdServ, int* run, char* user);
 void readFromServer(int fdCli, int* run, EditorData* ed);
+
+// Mutexes
+pthread_mutex_t mutexEditor;
 
 //WINDOW* masterWin;
 WINDOW* titleWin;
@@ -121,6 +125,8 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* T
     writeDocument(ed->lines, ed->lin);
     wrefresh(editorWin);
 
+    pthread_mutex_init(&mutexEditor, NULL);
+
     //Preparar FD para select
     fd_set fd_leitura, fd_leitura_temp;
     FD_ZERO(&fd_leitura);
@@ -130,7 +136,7 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* T
 
     int key;
     refreshCursor(0, 0);
-    
+
     while (*run) {
         fd_leitura_temp = fd_leitura;
         switch (select(32, &fd_leitura_temp, NULL, NULL, NULL)) {
@@ -156,10 +162,12 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* T
 void writeToServer(int fdServ, int* run, char* user) {
     int key;
     ClientMsg msg;
-    strncpy(msg.username, user, 9);
 
-    //read(STDIN_FILENO, &key, sizeof (char));
     key = getch();
+
+    pthread_mutex_lock(&mutexEditor);
+
+    strncpy(msg.username, user, 9);
 
     switch (key) {
         case KEY_LEFT:
@@ -193,6 +201,7 @@ void writeToServer(int fdServ, int* run, char* user) {
     if (*run) {
         write(fdServ, &msg, sizeof (msg));
     }
+    pthread_mutex_unlock(&mutexEditor);
 }
 
 void readFromServer(int fdCli, int* run, EditorData *ed) {
@@ -201,6 +210,9 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
     int serverUp = 1;
 
     nBytes = read(fdCli, &msg, sizeof (msg));
+
+    pthread_mutex_lock(&mutexEditor);
+
     if (nBytes == sizeof (msg)) {
         switch (msg.code) {
             case SERVER_SHUTDOWN:
@@ -217,6 +229,8 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
                 break;
         }
     }
+    pthread_mutex_unlock(&mutexEditor);
+
     if (!serverUp)
         exitServerShutdown();
 }
