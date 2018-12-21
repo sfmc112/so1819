@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/select.h>
+#include <stdlib.h>
 #include "client-defaults.h"
 
 #define TITLE "MEDIT EDITOR--------------------filename.xpto-----------------------------------"
@@ -129,19 +131,45 @@ void editor(char* user, EditorData * ed, int fdServ, int* run) { /* TODO receber
     writeDocument(ed->lines, ed->lin);
     wrefresh(editorWin);
 
-    int key;// x = 0, y = 0;
-    //char linha[WIN_EDITOR_MAX_X];
+    //Preparar FD para select
 /*
-    mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
-    refreshCursor(y, x);
+    fd_set fd_leitura, fd_leitura_temp;
+    FD_ZERO(&fd_leitura);
+    FD_ZERO(&fd_leitura_temp);
+    FD_SET(STDIN_FILENO, &fd_leitura);
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 500;
 */
+
+    int key; // x = 0, y = 0;
+    //char linha[WIN_EDITOR_MAX_X];
+    /*
+        mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
+        refreshCursor(y, x);
+     */
     refreshCursor(0, 0);
-    
+
     ClientMsg msg;
     //msg.linePosition = msg.columnPosition = 0;
     strncpy(msg.username, user, 9);
     while (*run) {
+        //fd_leitura_temp = fd_leitura;
+        //switch (select(32, &fd_leitura_temp, NULL, NULL, &timeout)) {
+        //case -1:
+        /*
+                        endwin();
+                        printf("Erro no select\n");
+                        exit(1);
+         */
+        //   break;
+        // case 0:
+        //     break;
+        //  default:
+        //  {
         key = getch();
+        //   if (FD_ISSET(STDIN_FILENO, &fd_leitura_temp)) {
+        //   read(STDIN_FILENO, &key, sizeof (char));
         switch (key) {
             case KEY_LEFT:
                 msg.msgType = MOVE_LEFT;
@@ -182,10 +210,13 @@ void editor(char* user, EditorData * ed, int fdServ, int* run) { /* TODO receber
                 msg.msgType = K_CHAR;
                 msg.letra = key;
         }
-        if (*run){
+        if (*run) {
             //getyx(editorWin, msg.linePosition, msg.columnPosition);
             write(fdServ, &msg, sizeof (msg));
         }
+        //   }
+        // }
+        // }
     }
     endwin();
     return;

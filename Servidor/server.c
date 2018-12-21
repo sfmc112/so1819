@@ -342,7 +342,12 @@ void* readFromIntPipe(void* arg) {
                         // TODO GRAVAR A LINHA E ASPELL BUGSSSS
                         puts("Vou perguntar ao Aspell se isto esta bem");
                         printf("A frase e %s\n", eData.lines[yPos].text);
-                        if (spellCheckSentence(eData.lines[yPos].text, fdToAspell, fdFromAspell) == 0) {
+                        
+                        char temp[DEFAULT_MAXCOLUMNS];
+                        strncpy(temp, eData.lines[yPos].text, DEFAULT_MAXCOLUMNS - 1);
+                        temp[DEFAULT_MAXCOLUMNS-1] = '\0';
+                        
+                        if (spellCheckSentence(temp, fdToAspell, fdFromAspell) == 0) {
                             puts("Vou sair do modo de edicao porque a frase esta correta");
                             state = !state;
                             strncpy(eData.clients[yPos], "\0", 1);
@@ -452,6 +457,12 @@ void testaAspell() {
     }
     puts("[ASPELL] A verificar a frase 'frase do dia'...");
     if (spellCheckSentence("frase do dia", fdToAspell, fdFromAspell) == 0) {
+        puts("[ASPELL] Esta correto");
+    } else {
+        puts("[ASPELL] Esta incorreto");
+    }
+    puts("[ASPELL] A verificar a frase 'O Gabriel limpa a cozinha'...");
+    if (spellCheckSentence("O Gabriel limpa a cozinha", fdToAspell, fdFromAspell) == 0) {
         puts("[ASPELL] Esta correto");
     } else {
         puts("[ASPELL] Esta incorreto");
