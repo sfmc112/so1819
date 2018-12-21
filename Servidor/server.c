@@ -350,7 +350,7 @@ void* readFromIntPipe(void* arg) {
                         if (spellCheckSentence(temp, fdToAspell, fdFromAspell) == 0) {
                             puts("Vou sair do modo de edicao porque a frase esta correta");
                             state = !state;
-                            strncpy(eData.clients[yPos], "\0", 1);
+                            strncpy(eData.clients[yPos], "        ", 8);
                             eData.lines[yPos].free = 1;
                             smsg.code = EDITOR_UPDATE;
                         }

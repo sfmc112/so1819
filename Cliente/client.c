@@ -10,14 +10,13 @@
 #include <ncurses.h>
 
 void sendLoginToServer(char* user);
-void exitClient();
 void exitLoginFailure();
 void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe);
-void* startEditor();
+void startEditor();
 void* readFromMyPipe();
 void configureSignalBeforeLogin(int sinal);
 void configureSignalAfterLogin(int sinal);
-void exitServerShutdown();
+
 
 int runClient = 1;
 int fdMyPipe = -1, fdSv = -1;
@@ -55,9 +54,11 @@ int main(int argc, char** argv) {
     sendLoginToServer(user);
 
     configureSignalAfterLogin(SIGINT);
+    
+    startEditor();
 
     // Login Efetuado com sucesso
-    createClientStartingThreads(&idEditor, &idMyPipe);
+    //createClientStartingThreads(&idEditor, &idMyPipe);
     //A aplicaçao vai terminar...
     exitClient();
 }
@@ -162,6 +163,7 @@ void sendLoginToServer(char* user) {
  * @param idEditor Thread idEditor
  * @param idMyPipe Thread idMyPipe
  */
+/*
 void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
     int err;
     err = pthread_create(idEditor, NULL, startEditor, NULL);
@@ -176,21 +178,22 @@ void createClientStartingThreads(pthread_t* idEditor, pthread_t* idMyPipe) {
     else
         printf("[CLIENTE] A thread responsavel pela leitura do pipe foi criada!\n");
 }
+*/
 
 /**
  * Função responsável por iniciar o editor.
  * @return NULL
  */
-void* startEditor() {
+void startEditor() {
     //TODO mutex
-    editor(user, &ed, fdSv, &runClient);
-    return NULL;
+    editor(user, &ed, fdMyPipe, fdSv, &runClient);
 }
 
 /**
  * Função responsável por ler do pipe principal do servidor.
  * @return NULL
  */
+/*
 void* readFromMyPipe() {
     int nBytes;
     ServerMsg msg;
@@ -223,6 +226,7 @@ void* readFromMyPipe() {
 
     return NULL;
 }
+*/
 
 /**
  * Função responsável por fechar a sessão porque o servidor foi desligado, mas fechando primeiramente os pipes e apagando o seu próprio pipe.

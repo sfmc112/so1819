@@ -8,6 +8,7 @@
 
 int contaPalavras(char * msg);
 int contaAsteriscos(char* msg);
+int countNewLines(char* buffer);
 
 /**
  * Função que termina a aplicação com erro.
@@ -83,7 +84,7 @@ void startAspell(int* fdWrite, int* fdRead) {
     pipe(fdPipeFromAspell);
 
     printf("[SERVIDOR] Aspell vai ser iniciado!\n");
-    
+
     if (fork() == 0) {
         dup2(fdPipeToAspell[0], STDIN_FILENO);
         close(fdPipeToAspell[1]);
@@ -194,6 +195,8 @@ int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
 
     token = strtok(tempMsg, " .,;:_?!");
 
+    int errou = 0;
+
     do {
         strncpy(pal, token, 49);
         pal[50] = '\0';
@@ -202,25 +205,53 @@ int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
         //pal[strlen(pal)] = '\0';
         write(fdWrite, pal, strlen(pal));
         write(fdWrite, "\n", 1);
-        printf("Escrevi: <%s\n>", pal);
-        
-        
+        //printf("Escrevi: <%s\n>", pal);
+
+        bytesRead = read(fdRead, resp, 4095);
+        if (resp[0] != '*')
+            errou = 1;
+
+        //Ler até encontrar 2 \n
+        int count = 0;
+        while (count < 2) {
+            resp[bytesRead] = '\0';
+            count += countNewLines(resp);
+            if (count < 2)
+                bytesRead = read(fdRead, resp, 4095);
+        }
         // TODO fazer ciclo de reads até encontrar 2 \n seguidos
         // O primeiro caracter é que se vê se está certo
-        bytesRead = read(fdRead, resp, 4095);
-        printf("Primeira resposta: Li %d bytes\n", bytesRead);
-        resp[bytesRead] = '\0';
-        printf("\nAspell: <%s>\n", resp);
+        /*
+                bytesRead = read(fdRead, resp, 4095);
+                printf("Primeira resposta: Li %d bytes\n", bytesRead);
+                resp[bytesRead] = '\0';
+                printf("\nAspell: <%s>\n", resp);
 
-        bytesRead = read(fdRead, resp2, 4095);
-        printf("Segunda resposta: Li %d bytes\n", bytesRead);
-        resp2[bytesRead] = '\0';
-        printf("\nAspell: <%s>\n", resp2);
-        if (resp[0] != '*')
-            return 1;
-        
+                bytesRead = read(fdRead, resp2, 4095);
+                printf("Segunda resposta: Li %d bytes\n", bytesRead);
+                resp2[bytesRead] = '\0';
+                printf("\nAspell: <%s>\n", resp2);
+         */
+
+        if (errou)
+            break;
+
     } while ((token = strtok(NULL, " .,;:_?!")) != NULL);
-    return 0;
+
+    return errou;
+}
+
+int countNewLines(char* buffer) {
+    int count = 0;
+    int i;
+
+    for (i = 0; buffer[i] != '\0'; i++) {
+        if (buffer[i] == '\n') {
+            count++;
+        }
+    }
+
+    return count;
 }
 
 

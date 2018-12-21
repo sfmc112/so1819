@@ -36,6 +36,10 @@ void writeKey(int key, char* linha, int x);
 void getLinha(char* linha, int y);
 void deleteKey(char* linha, int x, int y);
 void backSpaceKey(char* linha, int x, int y);
+
+void writeToServer(int fdServ, int* run, char* user);
+void readFromServer(int fdCli, int* run, EditorData* ed);
+
 //WINDOW* masterWin;
 WINDOW* titleWin;
 WINDOW* userWin;
@@ -82,7 +86,7 @@ void loginSession(char* user) {
 /**
  * Função responsável por tudo acerca do editor.
  */
-void editor(char* user, EditorData * ed, int fdServ, int* run) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
+void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) { /* TODO receber nome do utilizador e escreve-lo só em modo de edição*/
     puts("Entrei no editor");
     initscr();
     start_color();
@@ -132,15 +136,11 @@ void editor(char* user, EditorData * ed, int fdServ, int* run) { /* TODO receber
     wrefresh(editorWin);
 
     //Preparar FD para select
-/*
     fd_set fd_leitura, fd_leitura_temp;
     FD_ZERO(&fd_leitura);
     FD_ZERO(&fd_leitura_temp);
     FD_SET(STDIN_FILENO, &fd_leitura);
-    struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 500;
-*/
+    FD_SET(fdCli, &fd_leitura);
 
     int key; // x = 0, y = 0;
     //char linha[WIN_EDITOR_MAX_X];
@@ -150,73 +150,24 @@ void editor(char* user, EditorData * ed, int fdServ, int* run) { /* TODO receber
      */
     refreshCursor(0, 0);
 
-    ClientMsg msg;
     //msg.linePosition = msg.columnPosition = 0;
-    strncpy(msg.username, user, 9);
     while (*run) {
-        //fd_leitura_temp = fd_leitura;
-        //switch (select(32, &fd_leitura_temp, NULL, NULL, &timeout)) {
-        //case -1:
-        /*
-                        endwin();
-                        printf("Erro no select\n");
-                        exit(1);
-         */
-        //   break;
-        // case 0:
-        //     break;
-        //  default:
-        //  {
-        key = getch();
-        //   if (FD_ISSET(STDIN_FILENO, &fd_leitura_temp)) {
-        //   read(STDIN_FILENO, &key, sizeof (char));
-        switch (key) {
-            case KEY_LEFT:
-                msg.msgType = MOVE_LEFT;
+        fd_leitura_temp = fd_leitura;
+        switch (select(32, &fd_leitura_temp, NULL, NULL, NULL)) {
+            case -1:
+                endwin();
+                puts("Erro no select");
+                *run = 0;
                 break;
-            case KEY_RIGHT:
-                msg.msgType = MOVE_RIGHT;
-                break;
-            case KEY_UP:
-                msg.msgType = MOVE_UP;
-                break;
-            case KEY_DOWN:
-                msg.msgType = MOVE_DOWN;
-                break;
-            case KEY_ENTR:
-                /*
-                                //TODO SE LINHA ESTÁ LIVRE, COLOCA OCUPADA E COMEÇA EDIÇÃO
-                                writeUser(user, y);
-                                //getLinha(linha, y);
-                                lines[y].free = 0;
-                                editMode(y, x, lines[y].text);
-                                writeDocument(lines, ed->lin);
-                                lines[y].free = 1;
-                                // TODO DESOCUPA A LINHA
-                                mvwprintw(stdscr, 19, 0, "Em modo de navegacao");
-                 */
-                msg.msgType = K_ENTER;
-                break;
-            case KEY_BACKSPACE:
-                msg.msgType = K_BACKSPACE;
-                break;
-            case KEY_DELETE:
-                msg.msgType = K_DEL;
-                break;
-            case KEY_ESC:
-                msg.msgType = K_ESC;
+            case 0:
                 break;
             default:
-                msg.msgType = K_CHAR;
-                msg.letra = key;
+                if (FD_ISSET(STDIN_FILENO, &fd_leitura_temp)) {
+                    writeToServer(fdServ, run, user);
+                } else if (FD_ISSET(fdCli, &fd_leitura_temp)) {
+                    readFromServer(fdCli, run, ed);
+                }
         }
-        if (*run) {
-            //getyx(editorWin, msg.linePosition, msg.columnPosition);
-            write(fdServ, &msg, sizeof (msg));
-        }
-        //   }
-        // }
-        // }
     }
     endwin();
     return;
@@ -272,6 +223,76 @@ void editMode(int y, int x, char* linha) {
     }
     resetLine(userWin, y, WIN_USER_MAX_X);
     strncpy(linha, linhaTemp, WIN_EDITOR_MAX_X);
+}
+
+void writeToServer(int fdServ, int* run, char* user) {
+    int key;
+    ClientMsg msg;
+    strncpy(msg.username, user, 9);
+
+    //read(STDIN_FILENO, &key, sizeof (char));
+    scanf("%d", &key);
+
+    switch (key) {
+        case KEY_LEFT:
+            msg.msgType = MOVE_LEFT;
+            break;
+        case KEY_RIGHT:
+            msg.msgType = MOVE_RIGHT;
+            break;
+        case KEY_UP:
+            msg.msgType = MOVE_UP;
+            break;
+        case KEY_DOWN:
+            msg.msgType = MOVE_DOWN;
+            break;
+        case KEY_ENTR:
+            msg.msgType = K_ENTER;
+            break;
+        case KEY_BACKSPACE:
+            msg.msgType = K_BACKSPACE;
+            break;
+        case KEY_DELETE:
+            msg.msgType = K_DEL;
+            break;
+        case KEY_ESC:
+            msg.msgType = K_ESC;
+            break;
+        default:
+            msg.msgType = K_CHAR;
+            msg.letra = key;
+    }
+    if (*run) {
+        //getyx(editorWin, msg.linePosition, msg.columnPosition);
+        write(fdServ, &msg, sizeof (msg));
+    }
+}
+
+void readFromServer(int fdCli, int* run, EditorData *ed) {
+    int nBytes;
+    ServerMsg msg;
+    int serverUp = 1;
+
+    nBytes = read(fdCli, &msg, sizeof (msg));
+    if (nBytes == sizeof (msg)) {
+        switch (msg.code) {
+            case SERVER_SHUTDOWN:
+                serverUp = 0;
+                break;
+            case EDITOR_SHUTDOWN:
+                *run = 0;
+                //close(STDIN_FILENO);
+                break;
+            default:
+                *ed = msg.ed;
+                writeUsers(*ed);
+                writeDocument(ed->lines, ed->lin);
+                refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition);
+                break;
+        }
+    }
+    if (!serverUp)
+        exitServerShutdown();
 }
 
 /**
