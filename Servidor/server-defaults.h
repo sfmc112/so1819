@@ -19,8 +19,10 @@ typedef struct _clientdata {
     // Variável de controlo de modo de edição e navegação
     int isEditing;
     // Texto que a linha possuía antes de entrar em edição
-    // TODO MUDAR O SIZE
     char oldText[DEFAULT_MAXCOLUMNS];
+    // Timeout por inatividade do cliente
+    int secondsAFK;
+    
 } ClientData;
 
 typedef struct _serverdata {

@@ -35,7 +35,7 @@ int checkUsername(char* user) {
 int checkUserOnline(char* user, ServerData sd) {
     int i;
     for (i = 0; i < sd.maxUsers; i++)
-        if(strncmp(user, sd.clients[i].username, 8) == 0 && sd.clients[i].valid)
+        if (strncmp(user, sd.clients[i].username, 8) == 0 && sd.clients[i].valid)
             return 1;
     return 0;
 }

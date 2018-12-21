@@ -137,6 +137,8 @@ void initializeServerData(ServerData* sd) {
         sd->clients[i].valid = 0;
         sd->clients[i].fdPipeClient = -1;
         sd->clients[i].columnPosition = sd->clients[i].linePosition = 0;
+        sd->clients[i].isEditing = 0;
+        sd->clients[i].secondsAFK = 0;
     }
 }
 

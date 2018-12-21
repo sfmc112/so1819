@@ -19,13 +19,14 @@ void configuraSinal(int sinal);
 void createNamedPipesServer(InteractionPipe* pipes);
 void openNamedPipesServer(InteractionPipe* pipes);
 void initializeInteractivePipes(InteractionPipe* pipes);
-void createServerStartingThreads(pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes);
+void createServerStartingThreads(pthread_t* timeouts, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe* pipes);
 void* readFromMainPipe(void* arg);
 void* readFromIntPipe(void* arg);
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
 void testaAspell();
 void writeToAClient(ClientData c, ServerMsg smsg);
 void writeToAllClients(ServerData sd, ServerMsg smsg);
+void* threadCheckTimeouts();
 
 EditorData eData;
 ServerData sData;
@@ -68,20 +69,14 @@ int main(int argc, char** argv) {
     //mutexEditorData = PTHREAD_MUTEX_INITIALIZER;
 
     //Inicializar threads;
+    pthread_t idCheckTimeout;
     pthread_t idMainPipe;
     pthread_t idIntPipes[sData.numInteractivePipes];
 
-    createServerStartingThreads(&idMainPipe, idIntPipes, interactivePipes);
+    createServerStartingThreads(&idCheckTimeout, &idMainPipe, idIntPipes, interactivePipes);
 
     readCommands();
-
-
-    //Fechar o programa 
-    /*
-        pthread_join(idCommands, NULL);
-        printf("[SERVIDOR] A thread responsavel por ler comandos terminou!\n");
-     */
-
+    
     //Fechar o programa
     puts("[SERVIDOR] Vai ser terminado.");
 
@@ -223,10 +218,16 @@ void initializeInteractivePipes(InteractionPipe * pipes) {
  * @param mainpipe Thread para ler do pipe principal do servidor
  * @param intpipes Array dos Pipes Interativos
  */
-void createServerStartingThreads(pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe * pipes) {
+void createServerStartingThreads(pthread_t* timeouts, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe * pipes) {
     puts("[SERVIDOR] Vao ser criadas as threads!");
 
     int err;
+    
+    err = pthread_create(timeouts, NULL, threadCheckTimeouts, NULL);
+    if (err)
+        printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
+    else
+        printf("[SERVIDOR] A thread responsavel por ler o pipe principal foi criada!\n");
 
     err = pthread_create(mainpipe, NULL, readFromMainPipe, (void*) pipes);
     if (err)
@@ -327,6 +328,10 @@ void* readFromIntPipe(void* arg) {
             int yPos = sData.clients[indexClient].linePosition;
             int xPos = sData.clients[indexClient].columnPosition;
             int state = sData.clients[indexClient].isEditing; // 0 - Navegação | 1 - Edição
+            
+            // Fazer reset ao contador do timeout
+            sData.clients[indexClient].secondsAFK = 0;
+            
             switch (msg.msgType) {
                 case CLIENT_SHUTDOWN:
                     removeClient(msg.username, &sData);
@@ -334,7 +339,6 @@ void* readFromIntPipe(void* arg) {
                     pipeI->numUsers--;
                     break;
                 case K_ENTER:
-                    // TODO MUTEX
                     if (!state) {
                         if (eData.lines[yPos].free == 1) {
                             strncpy(eData.clients[yPos], msg.username, 9);
@@ -344,7 +348,6 @@ void* readFromIntPipe(void* arg) {
                             state = !state;
                         }
                     } else {
-                        // TODO GRAVAR A LINHA E ASPELL BUGSSSS
                         puts("Vou perguntar ao Aspell se isto esta bem");
                         printf("A frase e %s\n", eData.lines[yPos].text);
 
@@ -459,6 +462,22 @@ void writeToAllClients(ServerData sd, ServerMsg smsg) {
             writeToAClient(sd.clients[i], smsg);
         }
     }
+}
+
+void* threadCheckTimeouts() {
+    int i;
+
+    while (sData.runServer) {
+        for (i = 0; i < sData.maxUsers; i++) {
+            if (sData.clients[i].valid && sData.clients[i].isEditing){
+                pthread_mutex_lock(&mutexClientData);
+                sData.clients[i].secondsAFK++;
+                pthread_mutex_unlock(&mutexClientData);
+            }
+        }
+        sleep(1);
+    }
+    return NULL;
 }
 
 void testaAspell() {

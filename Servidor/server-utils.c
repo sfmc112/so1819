@@ -211,7 +211,7 @@ int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
         if (resp[0] != '*')
             errou = 1;
 
-        //Ler até encontrar 2 \n
+        // Ler até encontrar 2 \n
         int count = 0;
         while (count < 2) {
             resp[bytesRead] = '\0';
@@ -219,19 +219,6 @@ int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
             if (count < 2)
                 bytesRead = read(fdRead, resp, 4095);
         }
-        // TODO fazer ciclo de reads até encontrar 2 \n seguidos
-        // O primeiro caracter é que se vê se está certo
-        /*
-                bytesRead = read(fdRead, resp, 4095);
-                printf("Primeira resposta: Li %d bytes\n", bytesRead);
-                resp[bytesRead] = '\0';
-                printf("\nAspell: <%s>\n", resp);
-
-                bytesRead = read(fdRead, resp2, 4095);
-                printf("Segunda resposta: Li %d bytes\n", bytesRead);
-                resp2[bytesRead] = '\0';
-                printf("\nAspell: <%s>\n", resp2);
-         */
 
         if (errou)
             break;

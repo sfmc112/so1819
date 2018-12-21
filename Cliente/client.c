@@ -158,7 +158,6 @@ void sendLoginToServer(char* user) {
  * @return NULL
  */
 void startEditor() {
-    //TODO mutex
     editor(user, &ed, fdMyPipe, fdSv, &runClient);
 }
 
