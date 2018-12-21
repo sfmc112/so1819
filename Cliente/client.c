@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include "biblioteca.h"
 #include "client-functions.h"
-#include <pthread.h>
 #include <signal.h>
 #include <ncurses.h>
 
@@ -24,8 +23,6 @@ char user[9];
 char myPipe[PIPE_NAME_MAX];
 char servPipe[PIPE_NAME_MAX];
 EditorData ed;
-pthread_t idEditor;
-pthread_t idMyPipe;
 
 int main(int argc, char** argv) {
     configureSignalBeforeLogin(SIGINT);
@@ -90,7 +87,6 @@ void configureSignalBeforeLogin(int sinal) {
  */
 void signalBehaviorAfterLogin(int numSinal) {
     if (numSinal == SIGINT) {
-        pthread_cancel(idEditor);
         puts("[CLIENTE] A thread responsavel pelo editor terminou!");
         exitClient();
     }
@@ -170,13 +166,8 @@ void startEditor() {
  */
 void exitServerShutdown() {
     endwin();
-    pthread_cancel(idEditor);
-    puts("[CLIENTE] A thread responsavel pelo editor terminou!");
 
     printf("[CLIENTE] O servidor foi desligado!\n[CLIENTE] A aplicação vai encerrar....\n");
-
-    pthread_join(idMyPipe, NULL);
-    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal terminou!");
 
     if (fdMyPipe >= 0) {
         puts("[CLIENTE] Vou fechar o meu pipe!");
@@ -198,8 +189,6 @@ void exitServerShutdown() {
 void exitClient() {
 
     printf("[CLIENTE] A aplicação vai encerrar....\n");
-    pthread_join(idEditor, NULL);
-    puts("[CLIENTE] A thread responsavel pelo editor terminou!");
     endwin();
 
     ClientMsg msg;
@@ -211,9 +200,6 @@ void exitClient() {
 
     runClient = 0;
     write(fdMyPipe, "\n", 1);
-
-    pthread_join(idMyPipe, NULL);
-    puts("[CLIENTE] A thread responsavel pela leitura do pipe principal terminou!");
 
     if (fdMyPipe >= 0) {
         puts("[CLIENTE] Vou fechar o meu pipe!");
