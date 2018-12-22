@@ -13,7 +13,7 @@
 
 #define MAX_INPUT 255
 
-void* readCommands();
+void readCommands();
 void trataSinal(int numSinal);
 void configuraSinal(int sinal);
 void createNamedPipesServer(InteractionPipe* pipes);
@@ -37,7 +37,7 @@ int fdMainPipe = -1;
 // Mutexes
 //pthread_mutex_t mutexAspell;
 pthread_mutex_t mutexClientData;
-//pthread_mutex_t mutexEditorData;
+pthread_mutex_t mutexEditorData;
 
 int main(int argc, char** argv) {
     if (verifySingleInstance() < 0)
@@ -64,9 +64,8 @@ int main(int argc, char** argv) {
     //testaAspell();
 
     // Inicializar mutexes
-    //mutexAspell = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_init(&mutexClientData, NULL);
-    //mutexEditorData = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_init(&mutexEditorData, NULL);
 
     //Inicializar threads;
     pthread_t idCheckTimeout;
@@ -76,7 +75,7 @@ int main(int argc, char** argv) {
     createServerStartingThreads(&idCheckTimeout, &idMainPipe, idIntPipes, interactivePipes);
 
     readCommands();
-    
+
     //Fechar o programa
     puts("[SERVIDOR] Vai ser terminado.");
 
@@ -91,12 +90,15 @@ int main(int argc, char** argv) {
     return (EXIT_SUCCESS);
 }
 
+// TODO mudar cdoc
+
 /**
  * Função responsável por ler o comando e interpreta-o.
  * @return 1 se conseguiu e 0 caso contrário
  */
-void* readCommands() {
+void readCommands() {
     char comando[MAX_INPUT];
+    char temp[MAX_INPUT];
     const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
     char* token = NULL;
     setbuf(stdout, NULL);
@@ -106,6 +108,7 @@ void* readCommands() {
         scanf(" %39[^\n]", comando);
         //comando tudo em letras minusculas
         toLower(comando);
+        strncpy(temp, comando, MAX_INPUT);
         //1ª parte do comando
         token = strtok(comando, " ");
         //Imprime comando
@@ -128,8 +131,11 @@ void* readCommands() {
                     cmdSave();
                 break;
             case 4:
-                if (checkCommandArgs(token))
-                    cmdFree();
+                if (checkCommandArgs(token)) {
+                    token = strtok(temp, " ");
+                    token = strtok(NULL, " ");
+                    cmdFree(token);
+                }
                 break;
             case 5:
                 cmdStats();
@@ -222,7 +228,7 @@ void createServerStartingThreads(pthread_t* timeouts, pthread_t* mainpipe, pthre
     puts("[SERVIDOR] Vao ser criadas as threads!");
 
     int err;
-    
+
     err = pthread_create(timeouts, NULL, threadCheckTimeouts, NULL);
     if (err)
         printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
@@ -328,10 +334,10 @@ void* readFromIntPipe(void* arg) {
             int yPos = sData.clients[indexClient].linePosition;
             int xPos = sData.clients[indexClient].columnPosition;
             int state = sData.clients[indexClient].isEditing; // 0 - Navegação | 1 - Edição
-            
+
             // Fazer reset ao contador do timeout
             sData.clients[indexClient].secondsAFK = 0;
-            
+
             switch (msg.msgType) {
                 case CLIENT_SHUTDOWN:
                     removeClient(msg.username, &sData);
@@ -341,7 +347,7 @@ void* readFromIntPipe(void* arg) {
                 case K_ENTER:
                     if (!state) {
                         if (eData.lines[yPos].free == 1) {
-                            strncpy(eData.clients[yPos], msg.username, 9);
+                            strncpy(eData.clients[yPos], msg.username, 8);
                             eData.lines[yPos].free = 0;
                             strncpy(sData.clients[indexClient].oldText, eData.lines[yPos].text, eData.col);
                             smsg.code = EDITOR_START;
@@ -469,7 +475,7 @@ void* threadCheckTimeouts() {
 
     while (sData.runServer) {
         for (i = 0; i < sData.maxUsers; i++) {
-            if (sData.clients[i].valid && sData.clients[i].isEditing){
+            if (sData.clients[i].valid && sData.clients[i].isEditing) {
                 pthread_mutex_lock(&mutexClientData);
                 sData.clients[i].secondsAFK++;
                 pthread_mutex_unlock(&mutexClientData);
@@ -512,3 +518,27 @@ void testaAspell() {
         puts("[ASPELL] Esta incorreto");
     }
 }
+
+void freeLine(int lineNumber) {
+
+    if (lineNumber >= 0 && lineNumber < eData.lin && eData.lines[lineNumber].free == 0) {
+
+        printf("[SERVIDOR] Vou libertar a linha %d.\n", lineNumber);
+
+        pthread_mutex_lock(&mutexClientData);
+        // Ir buscar o indíce do cliente no array de ClientData
+        int index = getClientArrayPosition(sData, eData.clients[lineNumber]);
+        strncpy(eData.clients[lineNumber], "        ", 8);
+        strncpy(eData.lines[lineNumber].text, sData.clients[index].oldText, eData.col);
+        eData.lines[lineNumber].free = 1;
+        sData.clients[index].isEditing = 0;
+
+        ServerMsg smsg;
+        smsg.code = EDITOR_UPDATE;
+        smsg.ed = eData;
+
+        writeToAllClients(sData, smsg);
+        pthread_mutex_unlock(&mutexClientData);
+    }
+}
+

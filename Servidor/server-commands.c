@@ -42,8 +42,14 @@ int cmdSave() {
     return 0;
 }
 
-int cmdFree() {
-    puts("Comando free nao implementado!");
+int cmdFree(char* token) {
+    int lineNumber;
+    if (sscanf(token, "%d", &lineNumber) != 1) {
+        return 1;
+    }
+
+    freeLine(lineNumber);
+
     return 0;
 }
 
@@ -58,9 +64,11 @@ int cmdUsers() {
 }
 
 int cmdText() {
-    puts("Comando text nao implementado!");
+    printEditor();
+    
     return 0;
 }
+
 /**
  * Função para verificar se um determinado comando possui um argumento.
  * @param token comando

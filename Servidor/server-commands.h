@@ -18,10 +18,13 @@ void cmdShutdown();
 void cmdSettings();
 int cmdLoad();
 int cmdSave();
-int cmdFree();
+int cmdFree(char* token);
 int cmdStats();
 int cmdUsers();
 int cmdText();
 int checkCommandArgs(char* token);
+
+void freeLine(int lineNumber);
+void printEditor();
 
 #endif /* COMMANDS_H */
