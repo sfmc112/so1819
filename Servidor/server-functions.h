@@ -28,4 +28,6 @@ void removeClient(char* username, ServerData* sd);
 int getClientArrayPosition(ServerData sd, char* user);
 void moveAllToTheLeft(char* linha, int x, int max_x);
 int moveAllToTheRight(char* linha, int x, int max_x);
+int getPercentage(char* user, EditorData ed);
+void getUsersOrderedBySessionDuration(int* users, ClientData* clients, int size);
 #endif /* SERVER_FUNCTIONS_H */

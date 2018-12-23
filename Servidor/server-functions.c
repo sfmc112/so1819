@@ -58,7 +58,8 @@ void resetMEDITLines(EditorData* ed) {
 
     for (i = 0; i < ed->lin; i++) {
         ed->lines[i].free = 1;
-        strncpy(ed->clients[i], "\0", 1);
+        strncpy(ed->clients[i], "        ", 8);
+        strncpy(ed->authors[i], "        ", 8);
         for (j = 0; j < ed->col; j++) {
             ed->lines[i].text[j] = ' ';
         }
@@ -165,10 +166,11 @@ int getFirstAvailablePosition(ServerData sd) {
  */
 void registerClient(char* username, ServerData* sData, int pos, int fdCli, int fdIntPipe) {
     sData->clients[pos].valid = 1;
-    strncpy(sData->clients[pos].username, username, 9);
+    strncpy(sData->clients[pos].username, username, 8);
     sData->clients[pos].fdPipeClient = fdCli;
     sData->clients[pos].fdIntPipe = fdIntPipe;
     sData->clients[pos].columnPosition = sData->clients[pos].linePosition = 0;
+    sData->clients[pos].isEditing = sData->clients[pos].secondsAFK = sData->clients[pos].secondsSession = 0;
 }
 
 /**
@@ -285,4 +287,57 @@ int getClientArrayPosition(ServerData sd, char* user) {
             return i;
         }
     return -1;
+}
+
+int getPercentage(char* user, EditorData ed) {
+    int count = 0;
+
+    int i;
+    for (i = 0; i < ed.lin; i++) {
+        if (!strncmp(user, ed.authors[i], 8))
+            count++;
+    }
+
+    return count * 100 / ed.lin;
+}
+
+int ifExists(int* users, int index) {
+    int i = 0;
+    while (users[i] != -1) {
+        if (users[i] == index) return 1;
+        i++;
+    }
+    return 0;
+}
+
+int getMax(int* users, ClientData* clients, int size) {
+    int max = -1;
+    int i;
+    for (i = 0; i < size; i++) {
+        if (clients[i].valid) {
+            if (clients[i].secondsSession > max && !ifExists(users, i))
+                max = clients[i].secondsSession;
+        }
+    }
+
+    for (i = 0; i < size; i++) {
+        if (clients[i].valid && clients[i].secondsSession == max && !ifExists(users, i))
+            return i;
+    }
+
+    return -1;
+}
+
+void getUsersOrderedBySessionDuration(int* users, ClientData* clients, int size) {
+    int i = 0, sair;
+    users[i] = -1;
+
+    do {
+        sair = getMax(users, clients, size);
+        if (sair != -1) {
+            users[i] = sair;
+            i++;
+            users[i] = -1;
+        }
+    } while (sair != -1);
 }

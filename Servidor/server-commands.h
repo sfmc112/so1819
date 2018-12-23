@@ -26,5 +26,5 @@ int checkCommandArgs(char* token);
 
 void freeLine(int lineNumber);
 void printEditor();
-
+void printUsers();
 #endif /* COMMANDS_H */

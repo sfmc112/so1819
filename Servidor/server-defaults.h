@@ -10,6 +10,8 @@ typedef struct _clientdata {
     char username[9];
     // Descritor do named pipe interativo que foi atribuído ao cliente
     int fdIntPipe;
+    // Nome do named pipe interativo que foi atribuído ao cliente
+    char nameIntPipe[PIPE_MAX_NAME];
     // Descritor do named pipe do cliente
     int fdPipeClient;
     // Linha do editor onde o cliente se encontra
@@ -22,7 +24,8 @@ typedef struct _clientdata {
     char oldText[DEFAULT_MAXCOLUMNS];
     // Timeout por inatividade do cliente
     int secondsAFK;
-    
+    // Tempo de atividade
+    int secondsSession;
 } ClientData;
 
 typedef struct _serverdata {

@@ -59,7 +59,7 @@ int cmdStats() {
 }
 
 int cmdUsers() {
-    puts("Comando users nao implementado!");
+    printUsers();
     return 0;
 }
 

@@ -59,6 +59,8 @@ struct _editordata {
     Line lines[DEFAULT_MAXLINES];
     // Clientes ativos a editar
     char clients[DEFAULT_MAXLINES][9];
+    // Último cliente que editou cada linha
+    char authors[DEFAULT_MAXLINES][9];
 };
 
 typedef struct _servermessage {

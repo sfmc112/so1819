@@ -301,6 +301,7 @@ void* readFromMainPipe(void* arg) {
                 int index = getIntPipe(sData, pipes);
                 strncpy(msg.intPipeName, pipes[index].pipeName, PIPE_MAX_NAME);
                 registerClient(login.username, &sData, pos, fdCli, pipes[index].fd);
+                strncpy(sData.clients[pos].nameIntPipe, pipes[index].pipeName, PIPE_MAX_NAME);
                 printf("[SERVIDOR] O utilizador %s conectou-se!\n", login.username);
                 printf("Descritor atual %d\n", sData.clients[getClientArrayPosition(sData, login.username)].fdPipeClient);
             }
@@ -364,11 +365,12 @@ void* readFromIntPipe(void* arg) {
                         if (spellCheckSentence(temp, fdToAspell, fdFromAspell) == 0) {
                             puts("Vou sair do modo de edicao porque a frase esta correta");
                             state = !state;
+                            if (strncmp(eData.lines[yPos].text, sData.clients[indexClient].oldText, eData.col))
+                                strncpy(eData.authors[yPos], eData.clients[yPos], 8);
                             strncpy(eData.clients[yPos], "        ", 8);
                             eData.lines[yPos].free = 1;
                             smsg.code = EDITOR_UPDATE;
                         }
-
                     }
                     break;
                 case K_ESC:
@@ -446,6 +448,7 @@ void* readFromIntPipe(void* arg) {
 
             if (smsg.code == EDITOR_UPDATE || smsg.code == EDITOR_START)
                 writeToAllClients(sData, smsg);
+
             else
                 writeToAClient(sData.clients[indexClient], smsg);
         }
@@ -455,6 +458,7 @@ void* readFromIntPipe(void* arg) {
 }
 
 void writeToAClient(ClientData c, ServerMsg smsg) {
+
     printf("A enviar msg tipo %d no descritor %d\n", smsg.code, c.fdPipeClient);
     smsg.cursorLinePosition = c.linePosition;
     smsg.cursorColumnPosition = c.columnPosition;
@@ -465,6 +469,7 @@ void writeToAllClients(ServerData sd, ServerMsg smsg) {
     int i;
     for (i = 0; i < sd.maxUsers; i++) {
         if (sd.clients[i].valid) {
+
             writeToAClient(sd.clients[i], smsg);
         }
     }
@@ -475,10 +480,15 @@ void* threadCheckTimeouts() {
 
     while (sData.runServer) {
         for (i = 0; i < sData.maxUsers; i++) {
+            sData.clients[i].secondsSession++;
             if (sData.clients[i].valid && sData.clients[i].isEditing) {
                 pthread_mutex_lock(&mutexClientData);
                 sData.clients[i].secondsAFK++;
                 pthread_mutex_unlock(&mutexClientData);
+                if (sData.clients[i].secondsAFK >= eData.timeout) {
+                    printf("[SERVIDOR] O cliente %s ficou inativo.\n", sData.clients[i].username);
+                    freeLine(sData.clients[i].linePosition);
+                }
             }
         }
         sleep(1);
@@ -515,6 +525,7 @@ void testaAspell() {
     if (spellCheckSentence("O Gabriel limpa a cozinha", fdToAspell, fdFromAspell) == 0) {
         puts("[ASPELL] Esta correto");
     } else {
+
         puts("[ASPELL] Esta incorreto");
     }
 }
@@ -539,6 +550,37 @@ void freeLine(int lineNumber) {
 
         writeToAllClients(sData, smsg);
         pthread_mutex_unlock(&mutexClientData);
+    }
+}
+
+void printEditor() {
+    //char ecra[eData.lin][12 + eData.col];
+
+    pthread_mutex_lock(&mutexClientData);
+    printf("\n\n-----TEXT-----\n");
+    for (int i = 0; i < eData.lin; i++) {
+        //snprintf(ecra[i], 12 + eData.col, "%s %02d %s", eData.clients[i], i, eData.lines[i].text);
+        //printf("%s\n", ecra[i]);
+        printf("%-8s %02d %s\n", eData.clients[i], i, eData.lines[i].text);
+    }
+    pthread_mutex_unlock(&mutexClientData);
+    putchar('\n');
+}
+
+void printUsers() {
+    int userIndex[sData.maxUsers];
+
+    getUsersOrderedBySessionDuration(userIndex, sData.clients, sData.maxUsers);
+
+    int i;
+
+    // TODO cabeçalho
+    for (i = 0; i < sData.maxUsers && userIndex[i] != -1; i++) {
+        printf("User: %s\nIdade Sessao: %4d segundos\nNome Pipe: %s\nPercentagem de linhas da sua autoria: %d%%",
+                sData.clients[userIndex[i]].username, sData.clients[userIndex[i]].secondsSession, sData.clients[userIndex[i]].nameIntPipe, getPercentage(sData.clients[userIndex[i]].username, eData));
+        if (sData.clients[userIndex[i]].isEditing)
+            printf("\nLinha em edicao %02d.", sData.clients[userIndex[i]].linePosition);
+        printf("\n\n");
     }
 }
 
