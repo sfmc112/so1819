@@ -123,12 +123,18 @@ void readCommands() {
                 cmdSettings(sData, eData);
                 break;
             case 2:
-                if (checkCommandArgs(token))
-                    cmdLoad();
+                if (checkCommandArgs(token)) {
+                    token = strtok(temp, " ");
+                    token = strtok(NULL, " ");
+                    cmdLoad(token);
+                }
                 break;
             case 3:
-                if (checkCommandArgs(token))
-                    cmdSave();
+                if (checkCommandArgs(token)) {
+                    token = strtok(temp, " ");
+                    token = strtok(NULL, " ");
+                    cmdSave(token);
+                }
                 break;
             case 4:
                 if (checkCommandArgs(token)) {
@@ -584,3 +590,83 @@ void printUsers() {
     }
 }
 
+void loadDocument(char* nomeFicheiro) {
+    FILE *file;
+    if ((file = fopen(nomeFicheiro, "rt"))) {
+        // Tratamento do texto do ficheiro para memória
+        char editorTemp[eData.lin][eData.col];
+        char textTemp[eData.col];
+        int i = 0;
+        char * pointer;
+        do {
+            pointer = fgets(textTemp, eData.col, file);
+            if (pointer != NULL) {
+                if (!spellCheckSentence(textTemp, fdToAspell, fdFromAspell)) {
+                    // Copia para o editor Temporario
+                    for (int j = 0; j < eData.col; j++) {
+                        editorTemp[i][j] = textTemp[j];
+                    }
+                    i++;
+                }
+            }
+        } while (i < eData.lin && pointer != NULL);
+        fclose(file);
+
+        // Colocar as restantes linhas nao lidas em branco
+        for (int j = i; j < eData.lin; j++) {
+            for (int k = 0; k < eData.col; k++) {
+                editorTemp[j][k] = ' ';
+            }
+
+        }
+
+        // Verificar se o texto está correto
+        // TODO BUG
+        printf("\n\nDOCUMENTO CARREGADO\n\n");
+        for (int i = 0; i < eData.lin; i++) {
+            printf("%s", editorTemp[i]);
+
+        }
+
+        /*
+                // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
+                pthread_mutex_lock(&mutexClientData);
+                for (i = 0; i < eData.lin; i++) {
+                    for (int j = 0; j < eData.col; j++) {
+                        eData.lines[i].text[j] = editorTemp[i][j];
+                    }
+                    freeLine(i);
+                }
+                pthread_mutex_unlock(&mutexClientData);
+         */
+    }
+}
+
+void saveDocument(char* nomeFicheiro) {
+    char editorTemp[eData.lin][eData.col];
+    int i = 0, j = 0;
+
+    pthread_mutex_lock(&mutexClientData);
+    for (i = 0; i < eData.lin; i++) {
+        freeLine(i);
+        if (!spellCheckSentence(eData.lines[i].text, fdToAspell, fdFromAspell)) {
+            for (j = 0; j < eData.col; j++) {
+                editorTemp[i][j] = eData.lines[i].text[j];
+            }
+        }
+    }
+    pthread_mutex_unlock(&mutexClientData);
+
+    FILE *f;
+    f = fopen(nomeFicheiro, "wt");
+
+    for (i = 0; i < eData.lin; i++) {
+        fprintf(f, "%s\n", eData.lines[i].text);
+    }
+
+    fclose(f);
+}
+
+void editorStats() {
+
+}

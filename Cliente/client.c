@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     sendLoginToServer(user);
 
     configureSignalAfterLogin(SIGINT);
-    
+
     startEditor();
 
     //A aplicaçao vai terminar...

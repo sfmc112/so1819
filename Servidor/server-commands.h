@@ -16,8 +16,8 @@
 
 void cmdShutdown();
 void cmdSettings();
-int cmdLoad();
-int cmdSave();
+int cmdLoad(char* token);
+int cmdSave(char* token);
 int cmdFree(char* token);
 int cmdStats();
 int cmdUsers();
@@ -26,5 +26,8 @@ int checkCommandArgs(char* token);
 
 void freeLine(int lineNumber);
 void printEditor();
+void editorStats();
 void printUsers();
+void loadDocument(char* nomeFicheiro);
+void saveDocument(char* nomeFicheiro);
 #endif /* COMMANDS_H */

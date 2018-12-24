@@ -32,13 +32,17 @@ void cmdSettings(ServerData sd, EditorData ed) {
     printf("Timeout por inatividade: %d\n\n", ed.timeout);
 }
 
-int cmdLoad() {
-    puts("Comando load nao implementado!");
+int cmdLoad(char* token) {
+    char nomeFicheiro[MAX_FILE_NAME];
+    sscanf(token, "%s", nomeFicheiro);
+    if (ifFileExists) loadDocument(nomeFicheiro);
     return 0;
 }
 
-int cmdSave() {
-    puts("Comando save nao implementado!");
+int cmdSave(char* token) {
+    char nomeFicheiro[MAX_FILE_NAME];
+    sscanf(token, "%s", nomeFicheiro);
+    if (ifFileExists) saveDocument(nomeFicheiro);
     return 0;
 }
 
@@ -54,7 +58,7 @@ int cmdFree(char* token) {
 }
 
 int cmdStats() {
-    puts("Comando statistics nao implementado!");
+    editorStats();
     return 0;
 }
 
@@ -65,7 +69,7 @@ int cmdUsers() {
 
 int cmdText() {
     printEditor();
-    
+
     return 0;
 }
 

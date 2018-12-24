@@ -3,6 +3,7 @@
 
 #include "biblioteca.h"
 #define MAX_SIZE_FILENAME 50
+
 typedef struct _clientdata {
     // Estado do cliente:\n - Ativo = 1\n - Inativo = 0
     int valid;
