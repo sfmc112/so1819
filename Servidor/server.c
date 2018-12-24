@@ -592,7 +592,7 @@ void printUsers() {
 
 void loadDocument(char* nomeFicheiro) {
     FILE *file;
-    if ((file = fopen(nomeFicheiro, "rt"))) {
+    if ((file = fopen(nomeFicheiro, "rt")) != NULL) {
         // Tratamento do texto do ficheiro para memória
         char editorTemp[eData.lin][eData.col];
         char textTemp[eData.col];
@@ -601,12 +601,17 @@ void loadDocument(char* nomeFicheiro) {
         do {
             pointer = fgets(textTemp, eData.col, file);
             if (pointer != NULL) {
-                if (!spellCheckSentence(textTemp, fdToAspell, fdFromAspell)) {
-                    // Copia para o editor Temporario
-                    for (int j = 0; j < eData.col; j++) {
-                        editorTemp[i][j] = textTemp[j];
+                if (strlen(textTemp) > 1) {
+                    if (textTemp[strlen(textTemp) - 1] == '\n')
+                        textTemp[strlen(textTemp) - 1] = '\0';
+
+                    if (!spellCheckSentence(textTemp, fdToAspell, fdFromAspell)) {
+                        // Copia para o editor Temporario
+                        for (int j = 0; j < eData.col; j++) {
+                            editorTemp[i][j] = textTemp[j];
+                        }
+                        i++;
                     }
-                    i++;
                 }
             }
         } while (i < eData.lin && pointer != NULL);
@@ -620,25 +625,26 @@ void loadDocument(char* nomeFicheiro) {
 
         }
 
-        // Verificar se o texto está correto
-        // TODO BUG
-        printf("\n\nDOCUMENTO CARREGADO\n\n");
-        for (int i = 0; i < eData.lin; i++) {
-            printf("%s", editorTemp[i]);
-
-        }
-
+        printf("\n\n[SERVIDOR] Documento \"%s\" carregado.\n\n", nomeFicheiro);
         /*
-                // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
-                pthread_mutex_lock(&mutexClientData);
-                for (i = 0; i < eData.lin; i++) {
+                for (int i = 0; i < eData.lin; i++) {
                     for (int j = 0; j < eData.col; j++) {
-                        eData.lines[i].text[j] = editorTemp[i][j];
+                        printf("%c", editorTemp[i][j]);
                     }
-                    freeLine(i);
+                    putchar('\n');
                 }
-                pthread_mutex_unlock(&mutexClientData);
          */
+
+
+        // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
+        pthread_mutex_lock(&mutexClientData);
+        for (i = 0; i < eData.lin; i++) {
+            for (int j = 0; j < eData.col; j++) {
+                eData.lines[i].text[j] = editorTemp[i][j];
+            }
+            freeLine(i);
+        }
+        pthread_mutex_unlock(&mutexClientData);
     }
 }
 

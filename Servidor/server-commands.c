@@ -35,14 +35,16 @@ void cmdSettings(ServerData sd, EditorData ed) {
 int cmdLoad(char* token) {
     char nomeFicheiro[MAX_FILE_NAME];
     sscanf(token, "%s", nomeFicheiro);
-    if (ifFileExists) loadDocument(nomeFicheiro);
+    if (ifFileExists(nomeFicheiro))
+        loadDocument(nomeFicheiro);
     return 0;
 }
 
 int cmdSave(char* token) {
     char nomeFicheiro[MAX_FILE_NAME];
     sscanf(token, "%s", nomeFicheiro);
-    if (ifFileExists) saveDocument(nomeFicheiro);
+    if (ifFileExists(nomeFicheiro))
+        saveDocument(nomeFicheiro);
     return 0;
 }
 
@@ -52,7 +54,13 @@ int cmdFree(char* token) {
         return 1;
     }
 
+    //lock mutex
+    
     freeLine(lineNumber);
+    
+    //TODO writeToAllCLients()
+    
+    //unlock mutex
 
     return 0;
 }
