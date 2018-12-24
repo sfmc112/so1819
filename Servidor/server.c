@@ -463,24 +463,6 @@ void* readFromIntPipe(void* arg) {
     return NULL;
 }
 
-void writeToAClient(ClientData c, ServerMsg smsg) {
-
-    printf("A enviar msg tipo %d no descritor %d\n", smsg.code, c.fdPipeClient);
-    smsg.cursorLinePosition = c.linePosition;
-    smsg.cursorColumnPosition = c.columnPosition;
-    write(c.fdPipeClient, &smsg, sizeof (smsg));
-}
-
-void writeToAllClients(ServerData sd, ServerMsg smsg) {
-    int i;
-    for (i = 0; i < sd.maxUsers; i++) {
-        if (sd.clients[i].valid) {
-
-            writeToAClient(sd.clients[i], smsg);
-        }
-    }
-}
-
 void* threadCheckTimeouts() {
     int i;
 
@@ -537,25 +519,14 @@ void testaAspell() {
 }
 
 void freeLine(int lineNumber) {
-
     if (lineNumber >= 0 && lineNumber < eData.lin && eData.lines[lineNumber].free == 0) {
-
         printf("[SERVIDOR] Vou libertar a linha %d.\n", lineNumber);
-
-        pthread_mutex_lock(&mutexClientData);
         // Ir buscar o indíce do cliente no array de ClientData
         int index = getClientArrayPosition(sData, eData.clients[lineNumber]);
         strncpy(eData.clients[lineNumber], "        ", 8);
         strncpy(eData.lines[lineNumber].text, sData.clients[index].oldText, eData.col);
         eData.lines[lineNumber].free = 1;
         sData.clients[index].isEditing = 0;
-
-        ServerMsg smsg;
-        smsg.code = EDITOR_UPDATE;
-        smsg.ed = eData;
-
-        writeToAllClients(sData, smsg);
-        pthread_mutex_unlock(&mutexClientData);
     }
 }
 
@@ -639,11 +610,14 @@ void loadDocument(char* nomeFicheiro) {
         // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
         pthread_mutex_lock(&mutexClientData);
         for (i = 0; i < eData.lin; i++) {
+            freeLine(i);
+        }
+        for (i = 0; i < eData.lin; i++) {
             for (int j = 0; j < eData.col; j++) {
                 eData.lines[i].text[j] = editorTemp[i][j];
             }
-            freeLine(i);
         }
+        sendMessageEditorUpdateToAllClients(eData, sData);
         pthread_mutex_unlock(&mutexClientData);
     }
 }
@@ -655,6 +629,8 @@ void saveDocument(char* nomeFicheiro) {
     pthread_mutex_lock(&mutexClientData);
     for (i = 0; i < eData.lin; i++) {
         freeLine(i);
+    }
+    for (i = 0; i < eData.lin; i++) {
         if (!spellCheckSentence(eData.lines[i].text, fdToAspell, fdFromAspell)) {
             for (j = 0; j < eData.col; j++) {
                 editorTemp[i][j] = eData.lines[i].text[j];
@@ -662,17 +638,29 @@ void saveDocument(char* nomeFicheiro) {
         }
     }
     pthread_mutex_unlock(&mutexClientData);
+    printf("\n\nCONSEGUI\n\n");
 
     FILE *f;
     f = fopen(nomeFicheiro, "wt");
 
-    for (i = 0; i < eData.lin; i++) {
-        fprintf(f, "%s\n", eData.lines[i].text);
+    if (f != NULL) {
+        for (int i = 0; i < eData.lin; i++) {
+            for (int j = 0; j < eData.col; j++) {
+                fprintf(f, "%c", editorTemp[i][j]);
+            }
+            fputc('\n', f);
+        }
+        fclose(f);
     }
-
-    fclose(f);
 }
 
 void editorStats() {
 
+}
+
+void freeOneLine(int lineNumber) {
+    pthread_mutex_lock(&mutexClientData);
+    freeLine(lineNumber);
+    sendMessageEditorUpdateToAllClients(eData, sData);
+    pthread_mutex_unlock(&mutexClientData);
 }

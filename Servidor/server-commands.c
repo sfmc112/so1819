@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "server-utils.h"
 #include "server-defaults.h"
 #include "server-commands.h"
+#include "server-functions.h"
 
 /**
  * Função responsável por colocar a variável de controlo a 0.
@@ -43,8 +45,7 @@ int cmdLoad(char* token) {
 int cmdSave(char* token) {
     char nomeFicheiro[MAX_FILE_NAME];
     sscanf(token, "%s", nomeFicheiro);
-    if (ifFileExists(nomeFicheiro))
-        saveDocument(nomeFicheiro);
+    saveDocument(nomeFicheiro);
     return 0;
 }
 
@@ -54,13 +55,7 @@ int cmdFree(char* token) {
         return 1;
     }
 
-    //lock mutex
-    
-    freeLine(lineNumber);
-    
-    //TODO writeToAllCLients()
-    
-    //unlock mutex
+    freeOneLine(lineNumber);
 
     return 0;
 }

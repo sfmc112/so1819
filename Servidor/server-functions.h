@@ -30,4 +30,6 @@ void moveAllToTheLeft(char* linha, int x, int max_x);
 int moveAllToTheRight(char* linha, int x, int max_x);
 int getPercentage(char* user, EditorData ed);
 void getUsersOrderedBySessionDuration(int* users, ClientData* clients, int size);
+void sendMessageEditorUpdateToAllClients(EditorData ed, ServerData sd);
+void writeToAllClients(ServerData sd, ServerMsg smsg);
 #endif /* SERVER_FUNCTIONS_H */

@@ -30,4 +30,5 @@ void editorStats();
 void printUsers();
 void loadDocument(char* nomeFicheiro);
 void saveDocument(char* nomeFicheiro);
+void freeOneLine(int lineNumber);
 #endif /* COMMANDS_H */

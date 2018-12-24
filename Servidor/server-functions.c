@@ -341,3 +341,30 @@ void getUsersOrderedBySessionDuration(int* users, ClientData* clients, int size)
         }
     } while (sair != -1);
 }
+
+void sendMessageEditorUpdateToAllClients(EditorData ed, ServerData sd) {
+    ServerMsg smsg;
+    smsg.code = EDITOR_UPDATE;
+    smsg.ed = ed;
+
+    writeToAllClients(sd, smsg);
+}
+
+
+void writeToAClient(ClientData c, ServerMsg smsg) {
+
+    printf("A enviar msg tipo %d no descritor %d\n", smsg.code, c.fdPipeClient);
+    smsg.cursorLinePosition = c.linePosition;
+    smsg.cursorColumnPosition = c.columnPosition;
+    write(c.fdPipeClient, &smsg, sizeof (smsg));
+}
+
+void writeToAllClients(ServerData sd, ServerMsg smsg) {
+    int i;
+    for (i = 0; i < sd.maxUsers; i++) {
+        if (sd.clients[i].valid) {
+
+            writeToAClient(sd.clients[i], smsg);
+        }
+    }
+}
