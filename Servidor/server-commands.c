@@ -45,6 +45,7 @@ int cmdLoad(char* token) {
 int cmdSave(char* token) {
     char nomeFicheiro[MAX_FILE_NAME];
     sscanf(token, "%s", nomeFicheiro);
+    //puts("Vou gravar o ficheiro");
     saveDocument(nomeFicheiro);
     return 0;
 }

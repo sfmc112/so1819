@@ -364,6 +364,8 @@ void* readFromIntPipe(void* arg) {
                         puts("Vou perguntar ao Aspell se isto esta bem");
                         printf("A frase e %s\n", eData.lines[yPos].text);
 
+                        //TODO bug segmentation fault
+
                         char temp[DEFAULT_MAXCOLUMNS];
                         strncpy(temp, eData.lines[yPos].text, DEFAULT_MAXCOLUMNS - 1);
                         temp[DEFAULT_MAXCOLUMNS - 1] = '\0';
@@ -563,63 +565,81 @@ void printUsers() {
 
 void loadDocument(char* nomeFicheiro) {
     FILE *file;
-    if ((file = fopen(nomeFicheiro, "rt")) != NULL) {
-        // Tratamento do texto do ficheiro para memória
-        char editorTemp[eData.lin][eData.col];
-        char textTemp[eData.col];
-        int i = 0;
-        char * pointer;
-        do {
-            pointer = fgets(textTemp, eData.col, file);
-            if (pointer != NULL) {
-                if (strlen(textTemp) > 1) {
-                    if (textTemp[strlen(textTemp) - 1] == '\n')
-                        textTemp[strlen(textTemp) - 1] = '\0';
 
-                    if (!spellCheckSentence(textTemp, fdToAspell, fdFromAspell)) {
-                        // Copia para o editor Temporario
-                        for (int j = 0; j < eData.col; j++) {
-                            editorTemp[i][j] = textTemp[j];
-                        }
-                        i++;
-                    }
-                }
-            }
-        } while (i < eData.lin && pointer != NULL);
-        fclose(file);
-
-        // Colocar as restantes linhas nao lidas em branco
-        for (int j = i; j < eData.lin; j++) {
-            for (int k = 0; k < eData.col; k++) {
-                editorTemp[j][k] = ' ';
-            }
-
-        }
-
-        printf("\n\n[SERVIDOR] Documento \"%s\" carregado.\n\n", nomeFicheiro);
-        /*
-                for (int i = 0; i < eData.lin; i++) {
-                    for (int j = 0; j < eData.col; j++) {
-                        printf("%c", editorTemp[i][j]);
-                    }
-                    putchar('\n');
-                }
-         */
-
-
-        // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
-        pthread_mutex_lock(&mutexClientData);
-        for (i = 0; i < eData.lin; i++) {
-            freeLine(i);
-        }
-        for (i = 0; i < eData.lin; i++) {
-            for (int j = 0; j < eData.col; j++) {
-                eData.lines[i].text[j] = editorTemp[i][j];
-            }
-        }
-        sendMessageEditorUpdateToAllClients(eData, sData);
-        pthread_mutex_unlock(&mutexClientData);
+    file = fopen(nomeFicheiro, "rt");
+    if (file == NULL) {
+        errorMessage("Houve um erro a abrir o ficheiro.");
+        return;
     }
+
+    char editorTemp[eData.lin][eData.col];
+    char textTemp[eData.col + 1];
+    int i = 0;
+    char * pointer;
+
+
+    while ((pointer = fgets(textTemp, eData.col + 1, file)) != NULL && i < eData.lin) {
+        //puts("DEBUG 1");
+        int ind = 0;
+        while (ind < eData.col && textTemp[ind] != '\n')
+            ind++;
+        if (ind < eData.col) {
+            for (; ind < eData.col; ind++)
+                textTemp[ind] = ' ';
+        } else
+            fgetc(file);
+
+        if (isLineEmpty(textTemp, eData.col)) {
+            //puts("DEBUG 2");
+            for (int j = 0; j < eData.col; j++) {
+                editorTemp[i][j] = ' ';
+            }
+        } else if (!spellCheckSentence(textTemp, fdToAspell, fdFromAspell)) {
+            //puts("DEBUG 3");
+            for (int j = 0; j < eData.col; j++) {
+                editorTemp[i][j] = textTemp[j];
+            }
+        } else {
+            //puts("DEBUG 4");
+            for (int j = 0; j < eData.col; j++) {
+                editorTemp[i][j] = ' ';
+            }
+        }
+        i++;
+    }
+
+    fclose(file);
+
+    // Colocar as restantes linhas nao lidas em branco
+    for (int j = i; j < eData.lin; j++) {
+        for (int k = 0; k < eData.col; k++) {
+            editorTemp[j][k] = ' ';
+        }
+    }
+
+    printf("\n\n[SERVIDOR] Documento \"%s\" carregado.\n\n", nomeFicheiro);
+/*
+    for (int i = 0; i < eData.lin; i++) {
+        for (int j = 0; j < eData.col; j++) {
+            printf("%c", editorTemp[i][j]);
+        }
+        putchar('\n');
+    }
+*/
+
+    // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
+    pthread_mutex_lock(&mutexClientData);
+    for (i = 0; i < eData.lin; i++) {
+        freeLine(i);
+    }
+    for (i = 0; i < eData.lin; i++) {
+        for (int j = 0; j < eData.col; j++) {
+            eData.lines[i].text[j] = editorTemp[i][j];
+        }
+    }
+    sendMessageEditorUpdateToAllClients(eData, sData);
+    pthread_mutex_unlock(&mutexClientData);
+
 }
 
 void saveDocument(char* nomeFicheiro) {
@@ -630,13 +650,25 @@ void saveDocument(char* nomeFicheiro) {
     for (i = 0; i < eData.lin; i++) {
         freeLine(i);
     }
+
+    //puts("Vou fazer spellcheck");
+
     for (i = 0; i < eData.lin; i++) {
-        if (!spellCheckSentence(eData.lines[i].text, fdToAspell, fdFromAspell)) {
+        //puts("DEBUG 1");
+
+        if (!isLineEmpty(eData.lines[i].text, eData.col) && !spellCheckSentence(eData.lines[i].text, fdToAspell, fdFromAspell)) {
+            //puts("DEBUG 2");
             for (j = 0; j < eData.col; j++) {
                 editorTemp[i][j] = eData.lines[i].text[j];
             }
+        } else {
+            //puts("DEBUG 3");
+            for (int k = 0; k < eData.col; k++) {
+                editorTemp[i][k] = ' ';
+            }
         }
     }
+
     pthread_mutex_unlock(&mutexClientData);
     printf("\n\nCONSEGUI\n\n");
 

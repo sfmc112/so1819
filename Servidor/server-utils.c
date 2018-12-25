@@ -201,8 +201,6 @@ int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
         strncpy(pal, token, 49);
         pal[50] = '\0';
 
-        //pal[strlen(pal)] = '\n';
-        //pal[strlen(pal)] = '\0';
         write(fdWrite, pal, strlen(pal));
         write(fdWrite, "\n", 1);
         //printf("Escrevi: <%s\n>", pal);
@@ -239,6 +237,21 @@ int countNewLines(char* buffer) {
     }
 
     return count;
+}
+
+/**
+ * 
+ * @param line
+ * @param tam
+ * @return 1 se linha está vazia
+ */
+int isLineEmpty(char* line, int tam) {
+    int i;
+    for (i = 0; i < tam; i++) {
+        if (line[i] != ' ')
+            return 0;
+    }
+    return 1;
 }
 
 
