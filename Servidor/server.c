@@ -65,7 +65,6 @@ int main(int argc, char** argv) {
 
     // Inicializar mutexes
     pthread_mutex_init(&mutexClientData, NULL);
-    pthread_mutex_init(&mutexEditorData, NULL);
 
     //Inicializar threads;
     pthread_t idCheckTimeout;

@@ -12,13 +12,8 @@
 #include <pthread.h>
 #include "client-defaults.h"
 
-#define TITLE "MEDIT EDITOR--------------------filename.xpto-----------------------------------"
-#define WIN_EDITOR_MAX_X 45
-#define WIN_EDITOR_MAX_Y 15
 #define WIN_USER_MAX_X 8
-#define WIN_USER_MAX_Y WIN_EDITOR_MAX_Y
 #define WIN_LINENUM_MAX_X 2
-#define WIN_LINENUM_MAX_Y WIN_EDITOR_MAX_Y
 #define WIN_TITLE_MAX_X COLS
 #define WIN_TITLE_MAX_Y 1
 #define KEY_ESC 27
@@ -27,16 +22,12 @@
 
 WINDOW* createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX);
 void configureWindow(WINDOW* janela, int setCores);
-void writeLineNumbers();
+void writeLineNumbers(int lines);
 void writeTextLine(char* text, int line);
+void writeStats(EditorData ed);
 void clearEditor(int dimY, int dimX);
 void resetLine(WINDOW* w, int line, int dimX);
 void writeTitle(char* titulo);
-void editMode(int y, int x, char* linha);
-void writeKey(int key, char* linha, int x);
-void getLinha(char* linha, int y);
-void deleteKey(char* linha, int x, int y);
-void backSpaceKey(char* linha, int x, int y);
 
 void writeToServer(int fdServ, int* run, char* user);
 void readFromServer(int fdCli, int* run, EditorData* ed);
@@ -49,7 +40,7 @@ WINDOW* titleWin;
 WINDOW* userWin;
 WINDOW* lineWin;
 WINDOW* editorWin;
-Line lines[WIN_EDITOR_MAX_Y];
+WINDOW* statsWin;
 
 /**
  * Verifica se ao inicializar o programa do cliente foi introduzido algum argumento.
@@ -104,24 +95,27 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
     init_pair(3, COLOR_WHITE, COLOR_BLACK);
 
     titleWin = createSubWindow(stdscr, WIN_TITLE_MAX_Y, WIN_TITLE_MAX_X, 0, 0);
-    userWin = createSubWindow(stdscr, WIN_USER_MAX_Y, WIN_USER_MAX_X, WIN_TITLE_MAX_Y + 1, 0);
-    lineWin = createSubWindow(stdscr, WIN_LINENUM_MAX_Y, WIN_LINENUM_MAX_X, WIN_TITLE_MAX_Y + 1, WIN_USER_MAX_X + 1);
+    userWin = createSubWindow(stdscr, ed->lin, WIN_USER_MAX_X, WIN_TITLE_MAX_Y + 1, 0);
+    lineWin = createSubWindow(stdscr, ed->lin, WIN_LINENUM_MAX_X, WIN_TITLE_MAX_Y + 1, WIN_USER_MAX_X + 1);
     editorWin = createSubWindow(stdscr, ed->lin, ed->col, WIN_TITLE_MAX_Y + 1, WIN_LINENUM_MAX_X + WIN_USER_MAX_X + 2);
+    statsWin = createSubWindow(stdscr, 3, WIN_TITLE_MAX_X, WIN_TITLE_MAX_Y + ed->lin + 2, 0);
 
     configureWindow(userWin, COLOR_PAIR(3));
     configureWindow(lineWin, COLOR_PAIR(3));
     configureWindow(editorWin, COLOR_PAIR(2));
     configureWindow(titleWin, COLOR_PAIR(1));
+    configureWindow(statsWin, COLOR_PAIR(3));
 
     writeTitle(ed->fileName);
     writeUsers(*ed);
-    writeLineNumbers();
+    writeLineNumbers(ed->lin);
 
     wmove(editorWin, 0, 0);
     wrefresh(stdscr);
     wrefresh(editorWin);
 
-    clearEditor(ed->lin, ed->col);
+    //clearEditor(ed->lin, ed->col);
+    werase(editorWin);
     writeDocument(ed->lines, ed->lin);
     wrefresh(editorWin);
 
@@ -135,7 +129,7 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
     FD_SET(fdCli, &fd_leitura);
 
     int key;
-    refreshCursor(0, 0);
+    refreshCursor(0, 0, ed->lin);
 
     while (*run) {
         fd_leitura_temp = fd_leitura;
@@ -226,7 +220,8 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
                 writeUsers(*ed);
                 writeTitle(ed->fileName);
                 writeDocument(ed->lines, ed->lin);
-                refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition);
+                writeStats(*ed);
+                refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition, ed->lin);
                 break;
         }
     }
@@ -273,8 +268,8 @@ void writeTitle(char* titulo) {
 /**
  * Função responsável por escrever a identicação numerada de cada linha.
  */
-void writeLineNumbers() {
-    for (int i = 0; i < WIN_LINENUM_MAX_Y; i++) {
+void writeLineNumbers(int lines) {
+    for (int i = 0; i < lines; i++) {
         mvwprintw(lineWin, i, 0, "%02d", i);
     }
 }
@@ -300,6 +295,17 @@ void writeUsers(EditorData ed) {
 void writeDocument(Line *text, int nLines) {
     for (int i = 0; i < nLines; i++)
         writeTextLine(text[i].text, i);
+}
+
+void writeStats(EditorData ed) {
+    werase(statsWin);
+    mvwprintw(statsWin, 0, 0, "Numero de palavras: %d", ed.numWords);
+    mvwprintw(statsWin, 1, 0, "Numero de letras: %d", ed.numLetters);
+
+    mvwprintw(statsWin, 2, 0, "Caracteres mais comuns: %c\t%c\t%c\t%c\t%c", ed.mostCommonChars[0],
+            ed.mostCommonChars[1], ed.mostCommonChars[2], ed.mostCommonChars[3], ed.mostCommonChars[4]);
+
+    wrefresh(statsWin);
 }
 
 /**
@@ -340,88 +346,11 @@ void resetLine(WINDOW* w, int line, int dimX) {
  * @param y linha
  * @param x coluna
  */
-void refreshCursor(int y, int x) {
+void refreshCursor(int y, int x, int lines) {
     int cy, cx;
     wmove(editorWin, y, x);
     getyx(editorWin, cy, cx);
-    mvwprintw(stdscr, 20, 0, "l: %02d\tc: %02d", cy, cx);
+    //mvwprintw(stdscr, WIN_TITLE_MAX_Y + lines + 2, 0, "l: %02d\tc: %02d", cy, cx);
     wrefresh(stdscr);
     wrefresh(editorWin);
-}
-
-/**
- * Função é responsável por mover o texto a partir de uma posição X para a
- * direita.
- * @param linha linha de texto
- * @param x coluna
- * @return 0 se falhou, 1 caso contrário
- */
-int moveAllToTheRight(char* linha, int x) {
-    int max = WIN_EDITOR_MAX_X - 1;
-    if (linha[max] != ' ')
-        return 0;
-    for (; max > x; max--)
-        linha[max] = linha[max - 1];
-    return 1;
-}
-
-/**
- * Função responsável por escrever uma tecla numa posição do array.
- * @param key Tecla
- * @param linha linha de texto
- * @param x posição no array
- */
-void writeKey(int key, char* linha, int x) {
-    if (moveAllToTheRight(linha, x))
-        linha[x] = key;
-}
-
-/**
- * Função responsável por extrair a informação da janela do editor para o array.
- * @param linha linha de texto
- * @param y linha
- */
-void getLinha(char* linha, int y) {
-    for (int i = 0; i < WIN_EDITOR_MAX_X; i++)
-        linha[i] = mvwinch(editorWin, y, i) & A_CHARTEXT; //para extrair o caracter; wvminch devolve um chtype e não um char
-}
-
-/**
- * Função responsável por mover todos os caractéres para a esquerda.
- * @param linha linha de texto
- * @param x posição no array
- */
-void moveAllToTheLeft(char* linha, int x) {
-    int max = WIN_EDITOR_MAX_X - 1;
-    for (; x < max; x++)
-        linha[x] = linha[x + 1];
-    linha[WIN_EDITOR_MAX_X - 1] = ' ';
-}
-
-/**
- * Função responsável por efetuar o comportamento normal de um backspace,
- * ou seja, apagar caractér por caractér.
- * @param linha linha de texto
- * @param x posição no array
- * @param y linha
- */
-void backSpaceKey(char* linha, int x, int y) {
-    if (x > 0) {
-        moveAllToTheLeft(linha, x - 1);
-        resetLine(editorWin, y, WIN_EDITOR_MAX_X);
-        writeTextLine(linha, y);
-    }
-}
-
-/**
- * Função responsável por efetuar o comportamento normal de um delete, ou seja,
- * apagar caractér por caractér.
- * @param linha linha de texto
- * @param x posição no array
- * @param y linha
- */
-void deleteKey(char* linha, int x, int y) {
-    moveAllToTheLeft(linha, x);
-    resetLine(editorWin, y, WIN_EDITOR_MAX_X);
-    writeTextLine(linha, y);
 }

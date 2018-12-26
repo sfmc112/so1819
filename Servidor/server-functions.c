@@ -67,6 +67,12 @@ void resetMEDITLines(EditorData* ed) {
     }
 
     strncpy(ed->fileName, "sem titulo", MAX_FILE_NAME);
+
+    ed->numLetters = ed->numWords = 0;
+
+    for (int i = 0; i < 5; i++) {
+        ed->mostCommonChars[i] = 0;
+    }
 }
 
 /**
