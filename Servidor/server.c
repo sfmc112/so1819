@@ -23,7 +23,6 @@ void createServerStartingThreads(pthread_t* timeouts, pthread_t* mainpipe, pthre
 void* readFromMainPipe(void* arg);
 void* readFromIntPipe(void* arg);
 void joinThreads(pthread_t mainpipe, pthread_t intpipes[]);
-void testaAspell();
 void writeToAClient(ClientData c, ServerMsg smsg);
 void writeToAllClients(ServerData sd, ServerMsg smsg);
 void* threadCheckTimeouts();
@@ -35,9 +34,7 @@ int fdFromAspell = -1;
 int fdMainPipe = -1;
 
 // Mutexes
-//pthread_mutex_t mutexAspell;
 pthread_mutex_t mutexClientData;
-pthread_mutex_t mutexEditorData;
 
 int main(int argc, char** argv) {
     if (verifySingleInstance() < 0)
@@ -61,12 +58,10 @@ int main(int argc, char** argv) {
 
     resetMEDITLines(&eData);
 
-    //testaAspell();
-
     // Inicializar mutexes
     pthread_mutex_init(&mutexClientData, NULL);
 
-    //Inicializar threads;
+    // Inicializar threads;
     pthread_t idCheckTimeout;
     pthread_t idMainPipe;
     pthread_t idIntPipes[sData.numInteractivePipes];
@@ -75,13 +70,13 @@ int main(int argc, char** argv) {
 
     readCommands();
 
-    //Fechar o programa
+    // Fechar o programa
     puts("[SERVIDOR] Vai ser terminado.");
 
     closeAndDeleteServerPipes(fdMainPipe, &sData, interactivePipes);
 
     puts("[ASPELL] Vai ser terminado.");
-    close(fdToAspell); //vai fazer terminar o Aspell
+    close(fdToAspell); // Vai fazer terminar o Aspell
 
     joinThreads(idMainPipe, idIntPipes);
 
@@ -89,11 +84,8 @@ int main(int argc, char** argv) {
     return (EXIT_SUCCESS);
 }
 
-// TODO mudar cdoc
-
 /**
  * Função responsável por ler o comando e interpreta-o.
- * @return 1 se conseguiu e 0 caso contrário
  */
 void readCommands() {
     char comando[MAX_INPUT];
@@ -118,12 +110,12 @@ void readCommands() {
         printf("[SERVIDOR] Introduza o comando: ");
         scanf(" %39[^\n]", comando);
         printStats = 0;
-        //comando tudo em letras minusculas
+        // comando tudo em letras minusculas
         toLower(comando);
         strncpy(temp, comando, MAX_INPUT);
         //1ª parte do comando
         token = strtok(comando, " ");
-        //Imprime comando
+        // Imprime comando
         //printf("%s\n", token);
         for (i = 0; i < 8 && strcmp(listaComandos[i], token) != 0; i++)
             ;
@@ -227,20 +219,18 @@ void openNamedPipesServer(InteractionPipe * pipes) {
  * @param pipes Array de Pipes Interativo
  */
 void initializeInteractivePipes(InteractionPipe * pipes) {
-    int i;
     puts("[SERVIDOR] A inicializar a informacao relativa aos pipes de interacao...");
-    for (i = 0; i < sData.numInteractivePipes; i++) {
+    for (int i = 0; i < sData.numInteractivePipes; i++) {
         pipes[i].numUsers = 0;
     }
 }
 
-/*-----------------------THREADS---------------------------------------*/
-
 /**
  * Função responsável por criar as threads.
- * @param commands Thread para leitura de comandos
+ * @param timeouts Thread para contabilizar timeouts
  * @param mainpipe Thread para ler do pipe principal do servidor
- * @param intpipes Array dos Pipes Interativos
+ * @param intpipes Array de Threads para os pipes interativos
+ * @param pipes Array dos Pipes Interativos
  */
 void createServerStartingThreads(pthread_t* timeouts, pthread_t* mainpipe, pthread_t intpipes[], InteractionPipe * pipes) {
     puts("[SERVIDOR] Vao ser criadas as threads!");
@@ -271,7 +261,6 @@ void createServerStartingThreads(pthread_t* timeouts, pthread_t* mainpipe, pthre
 
 /**
  * Função responsável por juntar as Threads.
- * @param commands Thread para leitura de comandos
  * @param mainpipe Thread para ler do pipe principal do servidor
  * @param intpipes Array dos Pipes Interativos
  */
@@ -287,6 +276,7 @@ void joinThreads(pthread_t mainpipe, pthread_t intpipes[]) {
 
 /**
  * Função responsável por efetuar a leitura do pipe principal do servidor.
+ * @param arg Array de pipes interativos
  * @return Ponteiro para void (void*)
  */
 void* readFromMainPipe(void* arg) {
@@ -332,7 +322,7 @@ void* readFromMainPipe(void* arg) {
 
 /**
  * Função repsonsável por efetuar a leitura dos pipes interativos. 
- * @param arg
+ * @param arg array de pipes interativos
  * @return Ponteiro para void (void*)
  */
 void* readFromIntPipe(void* arg) {
@@ -346,8 +336,8 @@ void* readFromIntPipe(void* arg) {
         pthread_mutex_lock(&mutexClientData);
         smsg.code = EDITOR_ERROR;
         if (nBytes == sizeof (msg)) {
-            printf("Msg tipo %d\n", msg.msgType);
-            printf("Cliente %s\nLetra %c\n", msg.username, msg.letra);
+            //printf("Msg tipo %d\n", msg.msgType);
+            //printf("Cliente %s\nLetra %c\n", msg.username, msg.letra);
 
             int indexClient = getClientArrayPosition(sData, msg.username);
             int yPos = sData.clients[indexClient].linePosition;
@@ -477,6 +467,10 @@ void* readFromIntPipe(void* arg) {
     return NULL;
 }
 
+/**
+ * Função responsável por contabilizar os timeouts.
+ * @return NULL
+ */
 void* threadCheckTimeouts() {
     int i;
     ServerMsg smsg;
@@ -505,40 +499,10 @@ void* threadCheckTimeouts() {
     return NULL;
 }
 
-void testaAspell() {
-    puts("[ASPELL] A verificar a frase 'sarahcomh'...");
-    if (spellCheckSentence("sarahcomh", fdToAspell, fdFromAspell) == 0) {
-        puts("[ASPELL] Esta correto");
-    } else {
-        puts("[ASPELL] Esta incorreto");
-    }
-    puts("[ASPELL] A verificar a frase 'Ricardo'...");
-    if (spellCheckSentence("Ricardo", fdToAspell, fdFromAspell) == 0) {
-        puts("[ASPELL] Esta correto");
-    } else {
-        puts("[ASPELL] Esta incorreto");
-    }
-    puts("[ASPELL] A verificar a frase 'Sarah'...");
-    if (spellCheckSentence("Sarah", fdToAspell, fdFromAspell) == 0) {
-        puts("[ASPELL] Esta correto");
-    } else {
-        puts("[ASPELL] Esta incorreto");
-    }
-    puts("[ASPELL] A verificar a frase 'frase do dia'...");
-    if (spellCheckSentence("frase do dia", fdToAspell, fdFromAspell) == 0) {
-        puts("[ASPELL] Esta correto");
-    } else {
-        puts("[ASPELL] Esta incorreto");
-    }
-    puts("[ASPELL] A verificar a frase 'O Gabriel limpa a cozinha'...");
-    if (spellCheckSentence("O Gabriel limpa a cozinha", fdToAspell, fdFromAspell) == 0) {
-        puts("[ASPELL] Esta correto");
-    } else {
-
-        puts("[ASPELL] Esta incorreto");
-    }
-}
-
+/**
+ * Função responsável por libertar uma determinada linha.
+ * @param lineNumber index da linha
+ */
 void freeLine(int lineNumber) {
     if (lineNumber >= 0 && lineNumber < eData.lin && eData.lines[lineNumber].free == 0) {
         printf("[SERVIDOR] Vou libertar a linha %d.\n", lineNumber);
@@ -551,6 +515,9 @@ void freeLine(int lineNumber) {
     }
 }
 
+/**
+ * Função responsável por mostrar o editor completo.
+ */
 void printEditor() {
     //char ecra[eData.lin][12 + eData.col];
 
@@ -565,6 +532,9 @@ void printEditor() {
     putchar('\n');
 }
 
+/**
+ * Função responsável por listar os utilizadores ordenados por tempo de sessão.
+ */
 void printUsers() {
     int userIndex[sData.maxUsers];
 
@@ -582,6 +552,10 @@ void printUsers() {
     }
 }
 
+/**
+ * Função responsável por carregar o texto do ficheiro enviado por argumento, descartando o atual.
+ * @param nomeFicheiro nome do ficheiro
+ */
 void loadDocument(char* nomeFicheiro) {
     FILE *file;
 
@@ -637,14 +611,6 @@ void loadDocument(char* nomeFicheiro) {
     }
 
     printf("\n\n[SERVIDOR] Documento \"%s\" carregado.\n\n", nomeFicheiro);
-    /*
-        for (int i = 0; i < eData.lin; i++) {
-            for (int j = 0; j < eData.col; j++) {
-                printf("%c", editorTemp[i][j]);
-            }
-            putchar('\n');
-        }
-     */
 
     // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
     pthread_mutex_lock(&mutexClientData);
@@ -659,9 +625,12 @@ void loadDocument(char* nomeFicheiro) {
     strncpy(eData.fileName, nomeFicheiro, MAX_FILE_NAME);
     sendMessageEditorUpdateToAllClients(eData, sData);
     pthread_mutex_unlock(&mutexClientData);
-
 }
 
+/**
+ * Função responsável por guardar todo o texto atual do editor num ficheiro com o nome que foi enviado por argumento.
+ * @param nomeFicheiro nome do ficheiro
+ */
 void saveDocument(char* nomeFicheiro) {
     char editorTemp[eData.lin][eData.col];
     int i = 0, j = 0;
@@ -706,6 +675,11 @@ void saveDocument(char* nomeFicheiro) {
     }
 }
 
+/**
+ * Função responsável por atualizar sempre as estatísticas do editor.
+ * @param param variável de controlo para imprimir no ecrã estas estatísticas.
+ * @return NULL
+ */
 void* editorStats(void* param) {
     int* print = (int*) param;
     int numWords, numLetters;
@@ -747,13 +721,18 @@ void* editorStats(void* param) {
         smsg.code = STATS_UPDATE;
         smsg.ed = eData;
         writeToAllClients(sData, smsg);
-        
+
         pthread_mutex_unlock(&mutexClientData);
 
         sleep(1);
     }
+    return NULL;
 }
 
+/**
+ * Função responsável por libertar uma determinada linha.
+ * @param lineNumber index da linha
+ */
 void freeOneLine(int lineNumber) {
     pthread_mutex_lock(&mutexClientData);
     freeLine(lineNumber);

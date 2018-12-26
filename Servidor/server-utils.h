@@ -22,4 +22,5 @@ int contaPalavras(char * msg);
 char* getArrayOfUniqueChars(EditorData eData, int* numUniqueChars);
 int countChars(EditorData eData, char c);
 int doesCharExistInArray(char* a, int size, char c);
+
 #endif /* UTILS_H */

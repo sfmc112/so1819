@@ -34,47 +34,59 @@ void cmdSettings(ServerData sd, EditorData ed) {
     printf("Timeout por inatividade: %d\n\n", ed.timeout);
 }
 
-int cmdLoad(char* token) {
+/**
+ * Função responsável por verificar se existe algum ficheiro com o nome enviado por argumento. Caso exista, esse ficheiro será carregado, descartando o atual.
+ * @param token comando completo
+ */
+void cmdLoad(char* token) {
     char nomeFicheiro[MAX_FILE_NAME];
     sscanf(token, "%s", nomeFicheiro);
     if (ifFileExists(nomeFicheiro))
         loadDocument(nomeFicheiro);
-    return 0;
 }
 
-int cmdSave(char* token) {
+/**
+ * Função responsável por guardar o texto atual do editor num ficheiro com o nome enviado por argumento.
+ * @param token comando completo
+ */
+void cmdSave(char* token) {
     char nomeFicheiro[MAX_FILE_NAME];
     sscanf(token, "%s", nomeFicheiro);
     //puts("Vou gravar o ficheiro");
     saveDocument(nomeFicheiro);
-    return 0;
 }
 
-int cmdFree(char* token) {
+/**
+ * Função responsável por libertar uma linha (colocar linha disponível para edição, descartando alterações).
+ * @param token comando completo
+ */
+void cmdFree(char* token) {
     int lineNumber;
-    if (sscanf(token, "%d", &lineNumber) != 1) {
-        return 1;
+    if (sscanf(token, "%d", &lineNumber) == 1) {
+        freeOneLine(lineNumber);
     }
-
-    freeOneLine(lineNumber);
-
-    return 0;
 }
 
-int cmdStats(int* print) {
+/**
+ * Função responsável por colocar a variável de controlo de listagem de informação de estatísticas a 1.
+ * @param print variável de controlo de listagem de informação de estatísticas
+ */
+void cmdStats(int* print) {
     *print = 1;
-    return 0;
 }
 
-int cmdUsers() {
+/**
+ * Função responsável por listar utilizadores.
+ */
+void cmdUsers() {
     printUsers();
-    return 0;
 }
 
-int cmdText() {
+/**
+ * Função responsável por mostrar o editor.
+ */
+void cmdText() {
     printEditor();
-
-    return 0;
 }
 
 /**
@@ -89,4 +101,3 @@ int checkCommandArgs(char* token) {
     puts("Falta o segundo parametro");
     return 0;
 }
-

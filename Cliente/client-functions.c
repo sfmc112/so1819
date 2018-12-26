@@ -29,27 +29,27 @@ void writeStats(EditorData ed);
 void resetLine(WINDOW* w, int line, int dimX);
 void writeTitle(char* titulo);
 void changeLineColor(int line, int colorPair);
-
 void writeToServer(int fdServ, int* run, char* user);
 void readFromServer(int fdCli, int* run, EditorData* ed);
 
 // Mutexes
 pthread_mutex_t mutexEditor;
 
-//WINDOW* masterWin;
 WINDOW* titleWin;
 WINDOW* userWin;
 WINDOW* lineWin;
 WINDOW* editorWin;
 WINDOW* statsWin;
 
-
 int y = 0, x = 0;
 
 /**
  * Verifica se ao inicializar o programa do cliente foi introduzido algum argumento.
- * @param argc quantidade de argumentos
- * @param argv array com os argumentos
+ * @param argc numero de argumentos
+ * @param argv argumentos
+ * @param pipeName nome do pipe principal do servidor
+ * @param user nome de utilizador
+ * @return 0 caso tenha inserido utilizador, 1 caso contrário.
  */
 int checkArgs(int argc, char** argv, char* pipeName, char* user) {
     int flag = 1;
@@ -76,6 +76,7 @@ int checkArgs(int argc, char** argv, char* pipeName, char* user) {
 
 /**
  * Função que pede o nome de utilizador e pede para que o servidor verifque se existe, fazendo assim o login ou não.
+ * @param user nome de utilizador
  */
 void loginSession(char* user) {
     printf("Insira o nome de utilizador: ");
@@ -84,6 +85,11 @@ void loginSession(char* user) {
 
 /**
  * Função responsável por tudo acerca do editor.
+ * @param user nome de utilizador
+ * @param ed ponteiro para estrutura dos dados do editor
+ * @param fdCli descritor do pipe do cliente
+ * @param fdServ descritor do pipe do servidor
+ * @param run variável de controlo de execução do cliente
  */
 void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
     puts("Entrei no editor");
@@ -160,6 +166,12 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
     return;
 }
 
+/**
+ * Função responsável por ler um character e enviar para o servidor.
+ * @param fdServ descritor do pipe do servidor
+ * @param run variável de controlo de execução do cliente
+ * @param user nome de utilizador
+ */
 void writeToServer(int fdServ, int* run, char* user) {
     int key;
     ClientMsg msg;
@@ -205,6 +217,12 @@ void writeToServer(int fdServ, int* run, char* user) {
     pthread_mutex_unlock(&mutexEditor);
 }
 
+/**
+ * Função responsável por receber mensagens do servidor e atualizar os dados respectivos.
+ * @param fdCli descritor do pipe do cliente
+ * @param run variável de controlo de execução do cliente
+ * @param ed ponteiro para estrutura de dados do editor
+ */
 void readFromServer(int fdCli, int* run, EditorData *ed) {
     int nBytes;
     ServerMsg msg;
@@ -218,7 +236,7 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
         *ed = msg.ed;
         y = msg.cursorLinePosition;
         x = msg.cursorColumnPosition;
-        
+
         switch (msg.code) {
             case SERVER_SHUTDOWN:
                 serverUp = 0;
@@ -278,7 +296,8 @@ void configureWindow(WINDOW* janela, int setCores) {
 }
 
 /**
- * Função responsável por escrever na janela titleWin um título.
+ * Função responsável por escrever na janela titleWin um título. 
+ * @param titulo nome do ficheiro
  */
 void writeTitle(char* titulo) {
     werase(titleWin);
@@ -286,12 +305,17 @@ void writeTitle(char* titulo) {
     wrefresh(titleWin);
 }
 
+/**
+ * Função responsável por escrever o número de identificação na respetiva linha enviada como argumento.
+ * @param i linha
+ */
 void writeOneLineNumber(int i) {
     mvwprintw(lineWin, i, 0, "%02d", i);
 }
 
 /**
  * Função responsável por escrever a identicação numerada de cada linha.
+ * @param lines quantidade de linhas
  */
 void writeLineNumbers(int lines) {
     for (int i = 0; i < lines; i++) {
@@ -301,10 +325,8 @@ void writeLineNumbers(int lines) {
 }
 
 /**
- * Função responsável por escrever o nome do utilizador que está a editar
- * a linha.
- * @param name Nome de utilizador
- * @param line Linha
+ * Função responsável por escrever o nome do utilizador que está a editar a linha.
+ * @param ed estrutura de dados do editor
  */
 void writeUsers(EditorData ed) {
     for (int i = 0; i < ed.lin; i++) {
@@ -323,6 +345,10 @@ void writeDocument(Line *text, int nLines) {
         writeTextLine(text[i].text, i);
 }
 
+/**
+ * Função responsável por escrever as estatísticas do editor na sua respectiva janela.
+ * @param ed estrutura de dados do editor
+ */
 void writeStats(EditorData ed) {
     werase(statsWin);
     mvwprintw(statsWin, 0, 1, "Numero de palavras: %d", ed.numWords);
@@ -336,7 +362,7 @@ void writeStats(EditorData ed) {
 
 /**
  * Função responsável por escrever um array de linhas no ecrã.
- * @param text String a ser escrita
+ * @param text string a ser escrita
  * @param line número da linha onde escrever
  */
 void writeTextLine(char* text, int line) {
@@ -348,6 +374,7 @@ void writeTextLine(char* text, int line) {
  * Função responsável por atualizar o cursor e as suas respectivas coordenadas.
  * @param y linha
  * @param x coluna
+ * @param lines quantidade de linhas
  */
 void refreshCursor(int y, int x, int lines) {
     int cy, cx;
@@ -358,6 +385,11 @@ void refreshCursor(int y, int x, int lines) {
     wrefresh(editorWin);
 }
 
+/**
+ * Função responsável por alterar a cor de uma determinada linha.
+ * @param line identificacao da linha
+ * @param colorPair id do par de cores
+ */
 void changeLineColor(int line, int colorPair) {
     wattron(lineWin, COLOR_PAIR(colorPair));
     writeOneLineNumber(line);

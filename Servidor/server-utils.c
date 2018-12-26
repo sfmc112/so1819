@@ -10,40 +10,29 @@ int contaAsteriscos(char* msg);
 int countNewLines(char* buffer);
 
 /**
- * Função que termina a aplicação com erro.
+ * Função que notifica o erro.
  * @param mensagem mensagem de erro
  */
 void errorMessage(char* message) {
     perror(message);
 }
 
+/**
+ * Função que termina a aplicação com erro.
+ * @param mensagem mensagem de erro
+ */
 void exitError(char* mensagem) {
     errorMessage(mensagem);
     exit(1);
 }
 
-//void exitNormal() {
-//    exit(0);
-//}
-
 /**
  * Função para colocar toda a string em letras minusculas.
  * @param buffer string a ser transformada
- * @return 
  */
 void toLower(char* buffer) {
     for (int i = 0; buffer[i] != '\0'; i++)
         buffer[i] = tolower(buffer[i]);
-}
-
-/**
- * Função para colocar toda a string em letras maiusculas.
- * @param buffer string a ser transformada
- * @return 
- */
-void toUpper(char* buffer) {
-    for (int i = 0; buffer[i] != '\0'; i++)
-        buffer[i] = toupper(buffer[i]);
 }
 
 /**
@@ -147,9 +136,11 @@ int contaAsteriscos(char* msg) {
 /**
  * Função responsável por enviar uma mensagem para o Aspell.
  * @param msg mensagem
+ * @param fdWrite descritor para escrita
+ * @param fdRead descritor para leitura
  * @return 0 se a frase está correta, 1 caso contrário
  */
-int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
+int spellCheckSentence(char* msg, int fdWrite, int fdRead) {
     int bytesRead;
     char resp[4096];
     char resp2[4096];
@@ -193,11 +184,15 @@ int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
     return errou;
 }
 
+/**
+ * Função responsável por contar novas linhas
+ * @param buffer texto
+ * @return quantidade de novas linhas que foram encontradas
+ */
 int countNewLines(char* buffer) {
     int count = 0;
-    int i;
 
-    for (i = 0; buffer[i] != '\0'; i++) {
+    for (int i = 0; buffer[i] != '\0'; i++) {
         if (buffer[i] == '\n') {
             count++;
         }
@@ -207,14 +202,13 @@ int countNewLines(char* buffer) {
 }
 
 /**
- * 
- * @param line
- * @param tam
- * @return 1 se linha está vazia
+ * Função responsável por verificar se uma linha está vazia.
+ * @param line linha de texto
+ * @param tam tamanho maximo da linha
+ * @return 1 se linha está vazia, 0 caso contrário.
  */
 int isLineEmpty(char* line, int tam) {
-    int i;
-    for (i = 0; i < tam; i++) {
+    for (int i = 0; i < tam; i++) {
         if (line[i] != ' ')
             return 0;
     }
@@ -222,11 +216,11 @@ int isLineEmpty(char* line, int tam) {
 }
 
 /**
- * 
- * @param a
- * @param size
- * @param c
- * @return 1 se existe, 0 caso contrário
+ * Função responsável por verificar se o caractér já existe ou não no array.
+ * @param a array de caractéres
+ * @param size tamanho do array
+ * @param c caractér para reconhecer
+ * @return 1 se existe, 0 caso contrário.
  */
 int doesCharExistInArray(char* a, int size, char c) {
     if (a == NULL)
@@ -241,10 +235,10 @@ int doesCharExistInArray(char* a, int size, char c) {
 }
 
 /**
- * Esta função não conta espaços em branco
- * @param eData
- * @param numUniqueChars
- * @return 
+ * Função responsável por obter um array de caractéres únicos presentes no texto. Vale a pena lembrar que esta função não conta espaços em branco.
+ * @param eData estrutura de dados do editor
+ * @param numUniqueChars array das quantidades de cada caractér
+ * @return array realocado
  */
 char* getArrayOfUniqueChars(EditorData eData, int* numUniqueChars) {
     char* array = NULL, *temp = NULL;
@@ -266,6 +260,12 @@ char* getArrayOfUniqueChars(EditorData eData, int* numUniqueChars) {
     return array;
 }
 
+/**
+ * Função responsável por contar as vezes que um determinado caractér aparece no texto.
+ * @param eData estrutura de dados do editor
+ * @param c caractér
+ * @return quantidade de vezes utilizado
+ */
 int countChars(EditorData eData, char c) {
     int count = 0;
 

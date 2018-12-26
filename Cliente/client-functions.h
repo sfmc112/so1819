@@ -18,4 +18,5 @@ void writeDocument(Line *text, int nLines);
 void writeUsers(EditorData ed);
 void exitServerShutdown();
 void exitClient();
+
 #endif /* CLIENT_FUNCTIONS_H */
