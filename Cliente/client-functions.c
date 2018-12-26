@@ -22,12 +22,13 @@
 
 WINDOW* createSubWindow(WINDOW* janelaMae, int dimY, int dimX, int startY, int startX);
 void configureWindow(WINDOW* janela, int setCores);
+void writeOneLineNumber(int i);
 void writeLineNumbers(int lines);
 void writeTextLine(char* text, int line);
 void writeStats(EditorData ed);
-void clearEditor(int dimY, int dimX);
 void resetLine(WINDOW* w, int line, int dimX);
 void writeTitle(char* titulo);
+void changeLineColor(int line, int colorPair);
 
 void writeToServer(int fdServ, int* run, char* user);
 void readFromServer(int fdCli, int* run, EditorData* ed);
@@ -41,6 +42,9 @@ WINDOW* userWin;
 WINDOW* lineWin;
 WINDOW* editorWin;
 WINDOW* statsWin;
+
+
+int y = 0, x = 0;
 
 /**
  * Verifica se ao inicializar o programa do cliente foi introduzido algum argumento.
@@ -93,6 +97,7 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
     init_pair(1, COLOR_BLACK, COLOR_CYAN);
     init_pair(2, COLOR_BLACK, COLOR_WHITE);
     init_pair(3, COLOR_WHITE, COLOR_BLACK);
+    init_pair(4, COLOR_RED, COLOR_BLACK);
 
     titleWin = createSubWindow(stdscr, WIN_TITLE_MAX_Y, WIN_TITLE_MAX_X, 0, 0);
     userWin = createSubWindow(stdscr, ed->lin, WIN_USER_MAX_X, WIN_TITLE_MAX_Y + 1, 0);
@@ -114,7 +119,6 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
     wrefresh(stdscr);
     wrefresh(editorWin);
 
-    //clearEditor(ed->lin, ed->col);
     werase(editorWin);
     writeDocument(ed->lines, ed->lin);
     wrefresh(editorWin);
@@ -129,7 +133,7 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
     FD_SET(fdCli, &fd_leitura);
 
     int key;
-    refreshCursor(0, 0, ed->lin);
+    refreshCursor(y, x, ed->lin);
 
     while (*run) {
         fd_leitura_temp = fd_leitura;
@@ -143,6 +147,9 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
                 break;
             default:
                 if (FD_ISSET(STDIN_FILENO, &fd_leitura_temp)) {
+                    wattroff(lineWin, COLOR_PAIR(4));
+                    writeLineNumbers(ed->lin);
+                    refreshCursor(y, x, ed->lin);
                     writeToServer(fdServ, run, user);
                 } else if (FD_ISSET(fdCli, &fd_leitura_temp)) {
                     readFromServer(fdCli, run, ed);
@@ -208,19 +215,33 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
     pthread_mutex_lock(&mutexEditor);
 
     if (nBytes == sizeof (msg)) {
+        *ed = msg.ed;
+        y = msg.cursorLinePosition;
+        x = msg.cursorColumnPosition;
+        
         switch (msg.code) {
             case SERVER_SHUTDOWN:
                 serverUp = 0;
                 break;
             case EDITOR_SHUTDOWN:
+                refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition, ed->lin);
                 *run = 0;
                 break;
+            case ASPELL_ERROR:
+                changeLineColor(msg.cursorLinePosition, 4);
+                refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition, ed->lin);
+                break;
+            case STATS_UPDATE:
+                writeStats(*ed);
+                refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition, ed->lin);
+                break;
+            case TIMEOUT:
+                wattroff(lineWin, COLOR_PAIR(4));
+                writeLineNumbers(ed->lin);
             default:
-                *ed = msg.ed;
                 writeUsers(*ed);
                 writeTitle(ed->fileName);
                 writeDocument(ed->lines, ed->lin);
-                writeStats(*ed);
                 refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition, ed->lin);
                 break;
         }
@@ -260,9 +281,13 @@ void configureWindow(WINDOW* janela, int setCores) {
  * Função responsável por escrever na janela titleWin um título.
  */
 void writeTitle(char* titulo) {
-    resetLine(titleWin, 0, WIN_TITLE_MAX_X);
+    werase(titleWin);
     mvwprintw(titleWin, 0, 0, "%s - MEDIT", titulo);
     wrefresh(titleWin);
+}
+
+void writeOneLineNumber(int i) {
+    mvwprintw(lineWin, i, 0, "%02d", i);
 }
 
 /**
@@ -270,8 +295,9 @@ void writeTitle(char* titulo) {
  */
 void writeLineNumbers(int lines) {
     for (int i = 0; i < lines; i++) {
-        mvwprintw(lineWin, i, 0, "%02d", i);
+        writeOneLineNumber(i);
     }
+    wrefresh(lineWin);
 }
 
 /**
@@ -299,10 +325,10 @@ void writeDocument(Line *text, int nLines) {
 
 void writeStats(EditorData ed) {
     werase(statsWin);
-    mvwprintw(statsWin, 0, 0, "Numero de palavras: %d", ed.numWords);
-    mvwprintw(statsWin, 1, 0, "Numero de letras: %d", ed.numLetters);
+    mvwprintw(statsWin, 0, 1, "Numero de palavras: %d", ed.numWords);
+    mvwprintw(statsWin, 1, 1, "Numero de letras: %d", ed.numLetters);
 
-    mvwprintw(statsWin, 2, 0, "Caracteres mais comuns: %c\t%c\t%c\t%c\t%c", ed.mostCommonChars[0],
+    mvwprintw(statsWin, 2, 1, "Caracteres mais comuns: %c\t%c\t%c\t%c\t%c", ed.mostCommonChars[0],
             ed.mostCommonChars[1], ed.mostCommonChars[2], ed.mostCommonChars[3], ed.mostCommonChars[4]);
 
     wrefresh(statsWin);
@@ -319,29 +345,6 @@ void writeTextLine(char* text, int line) {
 }
 
 /**
- * Função responsável por limpar o editor entre duas dimensões.
- * @param dimY Altura
- * @param dimX Largura
- */
-void clearEditor(int dimY, int dimX) {
-    for (int i = 0; i < dimY; i++) {
-        resetLine(editorWin, i, dimX);
-    }
-}
-
-/**
- * Função responsável por escrever uma linha em branco numa determinada janela.
- * @param w Janela
- * @param line Linha
- * @param dimX Largura
- */
-void resetLine(WINDOW* w, int line, int dimX) {
-    for (int i = 0; i < dimX; i++)
-        mvwprintw(w, line, i, " ");
-    wrefresh(w);
-}
-
-/**
  * Função responsável por atualizar o cursor e as suas respectivas coordenadas.
  * @param y linha
  * @param x coluna
@@ -353,4 +356,11 @@ void refreshCursor(int y, int x, int lines) {
     //mvwprintw(stdscr, WIN_TITLE_MAX_Y + lines + 2, 0, "l: %02d\tc: %02d", cy, cx);
     wrefresh(stdscr);
     wrefresh(editorWin);
+}
+
+void changeLineColor(int line, int colorPair) {
+    wattron(lineWin, COLOR_PAIR(colorPair));
+    writeOneLineNumber(line);
+    wrefresh(lineWin);
+    //wattroff(editorWin, COLOR_PAIR(colorPair));
 }

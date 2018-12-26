@@ -373,23 +373,23 @@ void* readFromIntPipe(void* arg) {
                             state = !state;
                         }
                     } else {
-                        puts("Vou perguntar ao Aspell se isto esta bem");
-                        printf("A frase e %s\n", eData.lines[yPos].text);
-
-                        //TODO bug segmentation fault
+                        //puts("Vou perguntar ao Aspell se isto esta bem");
+                        //printf("A frase e %s\n", eData.lines[yPos].text);
 
                         char temp[DEFAULT_MAXCOLUMNS];
                         strncpy(temp, eData.lines[yPos].text, DEFAULT_MAXCOLUMNS - 1);
                         temp[DEFAULT_MAXCOLUMNS - 1] = '\0';
 
                         if (spellCheckSentence(temp, fdToAspell, fdFromAspell) == 0) {
-                            puts("Vou sair do modo de edicao porque a frase esta correta");
+                            //puts("Vou sair do modo de edicao porque a frase esta correta");
                             state = !state;
                             if (strncmp(eData.lines[yPos].text, sData.clients[indexClient].oldText, eData.col))
                                 strncpy(eData.authors[yPos], eData.clients[yPos], 8);
                             strncpy(eData.clients[yPos], "        ", 8);
                             eData.lines[yPos].free = 1;
                             smsg.code = EDITOR_UPDATE;
+                        } else {
+                            smsg.code = ASPELL_ERROR;
                         }
                     }
                     break;
@@ -479,6 +479,7 @@ void* readFromIntPipe(void* arg) {
 
 void* threadCheckTimeouts() {
     int i;
+    ServerMsg smsg;
 
     while (sData.runServer) {
         for (i = 0; i < sData.maxUsers; i++) {
@@ -486,11 +487,17 @@ void* threadCheckTimeouts() {
             if (sData.clients[i].valid && sData.clients[i].isEditing) {
                 pthread_mutex_lock(&mutexClientData);
                 sData.clients[i].secondsAFK++;
-                pthread_mutex_unlock(&mutexClientData);
                 if (sData.clients[i].secondsAFK >= eData.timeout) {
                     printf("[SERVIDOR] O cliente %s ficou inativo.\n", sData.clients[i].username);
                     freeLine(sData.clients[i].linePosition);
+                    smsg.code = TIMEOUT;
+                    smsg.ed = eData;
+                    smsg.cursorLinePosition = sData.clients[i].linePosition;
+                    smsg.cursorColumnPosition = sData.clients[i].columnPosition;
+                    writeToAClient(sData.clients[i], smsg);
+                    sendMessageEditorUpdateToAllClients(eData, sData);
                 }
+                pthread_mutex_unlock(&mutexClientData);
             }
         }
         sleep(1);
@@ -736,7 +743,11 @@ void* editorStats(void* param) {
             eData.mostCommonChars[i] = mostCommonChars[i];
         }
 
-        sendMessageEditorUpdateToAllClients(eData, sData);
+        ServerMsg smsg;
+        smsg.code = STATS_UPDATE;
+        smsg.ed = eData;
+        writeToAllClients(sData, smsg);
+        
         pthread_mutex_unlock(&mutexClientData);
 
         sleep(1);

@@ -22,6 +22,9 @@
 #define EDITOR_ERROR 4
 #define EDITOR_UPDATE 5
 #define EDITOR_SHUTDOWN 6
+#define ASPELL_ERROR 7
+#define STATS_UPDATE 8
+#define TIMEOUT 9
 
 /* MSG TYPES */
 #define MOVE_UP 100
@@ -70,7 +73,7 @@ struct _editordata {
 };
 
 typedef struct _servermessage {
-    // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_START 3\n - EDITOR_ERROR 4\n - EDITOR_UPDATE 5\n - EDITOR_SHUTDOWN 6 
+    // Códigos disponíveis:\n\n - LOGIN_SUCCESS 0\n - LOGIN_FAILURE 1\n - SERVER_SHUTDOWN 2\n - EDITOR_START 3\n - EDITOR_ERROR 4\n - EDITOR_UPDATE 5\n - EDITOR_SHUTDOWN 6\n - ASPELL_ERROR 7\n - STATS_UPDATE 8\n - TIMEOUT 9
     int code;
     char intPipeName[PIPE_MAX_NAME];
     EditorData ed;
