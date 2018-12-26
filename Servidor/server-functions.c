@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <ctype.h>
 
 /**
  * Função para verificar se existem argumentos de inicialização do programa.
@@ -350,7 +351,6 @@ void sendMessageEditorUpdateToAllClients(EditorData ed, ServerData sd) {
     writeToAllClients(sd, smsg);
 }
 
-
 void writeToAClient(ClientData c, ServerMsg smsg) {
 
     printf("A enviar msg tipo %d no descritor %d\n", smsg.code, c.fdPipeClient);
@@ -368,22 +368,71 @@ void writeToAllClients(ServerData sd, ServerMsg smsg) {
     }
 }
 
-int countNumberOfWords(EditorData eData){
-    int i, count = 0;
+int countNumberOfWords(EditorData eData) {
+    int count = 0;
     char linha[eData.col + 1];
-    
-    for (i = 0; i < eData.lin; i++) {
+
+    for (int i = 0; i < eData.lin; i++) {
         strncpy(linha, eData.lines[i].text, eData.col);
         linha[eData.col] = 0;
         count += contaPalavras(linha);
     }
-
+    return count;
 }
 
-int countNumberofLetters(EditorData eData){
-    
+int countNumberofLetters(EditorData eData) {
+    int count = 0;
+
+    for (int i = 0; i < eData.lin; i++) {
+        for (int j = 0; j < eData.col; j++) {
+            if (isalpha(eData.lines[i].text[j]))
+                count++;
+        }
+    }
+    return count;
 }
 
-char* getMostCommonChars(char* mostCommonChars, EditorData eData){
-    
+void getMostCommonChars(char* mostCommonChars, EditorData eData) {
+    // Criar array com todos os caracteres únicos do texto
+    // Contar o número de ocorrências de cada caractere
+    // Ver os 5 maiores e guardar
+    // Devolver array
+
+    for (int i = 0; i < 5; i++)
+        mostCommonChars[i] = 0;
+
+    int numUniqueChars = 0;
+    char* uniqueChars;
+    uniqueChars = getArrayOfUniqueChars(eData, &numUniqueChars);
+
+    if (uniqueChars == NULL) {
+        //errorMessage("Nao ha caracteres diferentes ou o documento esta vazio");
+        return;
+    }
+
+    int numberOfChars[numUniqueChars];
+
+    for (int i = 0; i < numUniqueChars; i++) {
+        numberOfChars[i] = countChars(eData, uniqueChars[i]);
+    }
+
+    // Procurar os 5 maiores
+
+    int count = 0;
+    int max = -1;
+    int index = -1;
+    int i;
+
+    while (count < 5) {
+        max = index = -1;
+        for (int i = 0; i < numUniqueChars; i++) {
+            if (max < numberOfChars[i] && !doesCharExistInArray(mostCommonChars, 5, uniqueChars[i])) {
+                max = numberOfChars[i];
+                index = i;
+            }
+        }
+        if (index == -1)
+            break;
+        mostCommonChars[count++] = uniqueChars[index];
+    }
 }

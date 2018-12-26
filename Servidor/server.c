@@ -112,7 +112,7 @@ void readCommands() {
     if (err)
         printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
-        printf("[SERVIDOR] A thread responsavel por contabilizar timeouts foi criada!\n");
+        printf("[SERVIDOR] A thread responsavel por calcular estatisticas foi criada!\n");
 
     // Ciclo principal
     while (sData.runServer) {
@@ -712,7 +712,7 @@ void* editorStats(void* param) {
         // Número de letras
         numLetters = countNumberofLetters(eData);
         // 5 caracteres mais comuns
-        mostCommonChars = getMostCommonChars(mostCommonChars, eData);
+        getMostCommonChars(mostCommonChars, eData);
 
         if (*print) {
             printf("\n\n-----STATISTICS-----\n");
@@ -721,13 +721,15 @@ void* editorStats(void* param) {
             printf("Caracteres mais comuns: ");
 
             for (int i = 0; i < 5; i++) {
-                printf("%c", mostCommonChars[i]);
-                i == 4 ? printf("\n\n") : printf(", ");
+                if (mostCommonChars[i] == '\0')
+                    break;
+                printf("%c\t", mostCommonChars[i]);
             }
+            printf("\n\n");
         }
 
         pthread_mutex_lock(&mutexClientData);
-        
+
         eData.numWords = numWords;
         eData.numLetters = numLetters;
 

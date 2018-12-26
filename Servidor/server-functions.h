@@ -32,4 +32,8 @@ int getPercentage(char* user, EditorData ed);
 void getUsersOrderedBySessionDuration(int* users, ClientData* clients, int size);
 void sendMessageEditorUpdateToAllClients(EditorData ed, ServerData sd);
 void writeToAllClients(ServerData sd, ServerMsg smsg);
+
+int countNumberOfWords(EditorData eData);
+int countNumberofLetters(EditorData eData);
+void getMostCommonChars(char* mostCommonChars, EditorData eData);
 #endif /* SERVER_FUNCTIONS_H */

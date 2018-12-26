@@ -15,7 +15,7 @@ server.o : server.c
 	gcc server.c -c $(HEADERS) $(RUN)
 
 server-utils.o : server-utils.c
-	gcc server-utils.c -c
+	gcc server-utils.c -c $(RUN)
 
 server-users.o : server-users.c
 	gcc server-users.c -c $(HEADERS) $(RUN)

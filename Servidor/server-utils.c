@@ -6,7 +6,6 @@
 #include <fcntl.h>
 #include <string.h>
 
-int contaPalavras(char * msg);
 int contaAsteriscos(char* msg);
 int countNewLines(char* buffer);
 
@@ -146,42 +145,6 @@ int contaAsteriscos(char* msg) {
 }
 
 /**
- * Função responsável por verificar se todas as palavras estão corretas.
- * @param msg mensagem
- * @param fdWrite descritor para escrita
- * @param fdRead descritor para leitura
- * @return 0 caso nao estejam todas corretas, !0 caso contrário
- */
-int spellCheck(char* msg, int fdWrite, int fdRead) {
-
-    int bytesRead;
-    char resp[4096];
-    int numPalavras;
-    int numAstericos;
-
-    // PRIMEIRA PALAVRA
-    numPalavras = contaPalavras(msg);
-
-
-    printf("Escrevi %d bytes\n", write(fdWrite, msg, strlen(msg)));
-    bytesRead = read(fdRead, resp, 4096);
-    printf("Li %d bytes\n", bytesRead);
-    resp[bytesRead - 1] = 0;
-    printf("\nAspell: <%s>\n\n", resp);
-
-    //msg[strlen(msg) - 1] = '\0';
-
-    numAstericos = contaAsteriscos(resp);
-
-    if (numPalavras == numAstericos)
-        fprintf(stdout, "A frase <%s> esta correta\n", msg);
-    else
-        fprintf(stdout, "Houve um erro na frase <%s>!\n", msg);
-
-    return numPalavras == numAstericos;
-}
-
-/**
  * Função responsável por enviar uma mensagem para o Aspell.
  * @param msg mensagem
  * @return 0 se a frase está correta, 1 caso contrário
@@ -196,6 +159,8 @@ int spellCheckSentence(char * msg, int fdWrite, int fdRead) {
     char* token;
 
     token = strtok(tempMsg, " .,;:_?!");
+    if (token == NULL)
+        return 0;
 
     int errou = 0;
 
@@ -256,6 +221,59 @@ int isLineEmpty(char* line, int tam) {
     return 1;
 }
 
+/**
+ * 
+ * @param a
+ * @param size
+ * @param c
+ * @return 1 se existe, 0 caso contrário
+ */
+int doesCharExistInArray(char* a, int size, char c) {
+    if (a == NULL)
+        return 0;
 
+    for (int i = 0; i < size; i++) {
+        if (a[i] == c)
+            return 1;
+    }
 
+    return 0;
+}
 
+/**
+ * Esta função não conta espaços em branco
+ * @param eData
+ * @param numUniqueChars
+ * @return 
+ */
+char* getArrayOfUniqueChars(EditorData eData, int* numUniqueChars) {
+    char* array = NULL, *temp = NULL;
+    *numUniqueChars = 0;
+
+    for (int i = 0; i < eData.lin; i++) {
+        for (int j = 0; j < eData.col; j++) {
+            if (eData.lines[i].text[j] != ' ' && !doesCharExistInArray(array, *numUniqueChars, eData.lines[i].text[j])) {
+                temp = realloc(array, sizeof (char) * (*numUniqueChars + 1));
+                if (temp == NULL) {
+                    errorMessage("Erro a allocar memória.");
+                    return array;
+                }
+                array = temp;
+                array[(*numUniqueChars)++] = eData.lines[i].text[j];
+            }
+        }
+    }
+    return array;
+}
+
+int countChars(EditorData eData, char c) {
+    int count = 0;
+
+    for (int i = 0; i < eData.lin; i++) {
+        for (int j = 0; j < eData.col; j++) {
+            if (eData.lines[i].text[j] == c)
+                count++;
+        }
+    }
+    return count;
+}
