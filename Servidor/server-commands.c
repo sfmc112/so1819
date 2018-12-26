@@ -61,8 +61,8 @@ int cmdFree(char* token) {
     return 0;
 }
 
-int cmdStats() {
-    editorStats();
+int cmdStats(int* print) {
+    *print = 1;
     return 0;
 }
 

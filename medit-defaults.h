@@ -61,6 +61,12 @@ struct _editordata {
     char clients[DEFAULT_MAXLINES][9];
     // Último cliente que editou cada linha
     char authors[DEFAULT_MAXLINES][9];
+    // Número total de palavras
+    int numWords;
+    // Número de letras
+    int numLetters;
+    // 5 caracteres mais comuns
+    char mostCommonChars[5];
 };
 
 typedef struct _servermessage {

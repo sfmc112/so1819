@@ -19,14 +19,14 @@ void cmdSettings();
 int cmdLoad(char* token);
 int cmdSave(char* token);
 int cmdFree(char* token);
-int cmdStats();
+int cmdStats(int* print);
 int cmdUsers();
 int cmdText();
 int checkCommandArgs(char* token);
 
 void freeLine(int lineNumber);
 void printEditor();
-void editorStats();
+void* editorStats(void* param);
 void printUsers();
 void loadDocument(char* nomeFicheiro);
 void saveDocument(char* nomeFicheiro);

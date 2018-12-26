@@ -99,13 +99,26 @@ int main(int argc, char** argv) {
 void readCommands() {
     char comando[MAX_INPUT];
     char temp[MAX_INPUT];
+    int printStats = 0;
     const char* listaComandos[] = {"shutdown", "settings", "load", "save", "free", "statistics", "users", "text"};
     char* token = NULL;
     setbuf(stdout, NULL);
-    int i;
+    int i, err;
+
+    // Thread para calcular e imprimir estatísticas
+    pthread_t stats;
+    err = pthread_create(&stats, NULL, editorStats, (void*) &printStats);
+
+    if (err)
+        printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
+    else
+        printf("[SERVIDOR] A thread responsavel por contabilizar timeouts foi criada!\n");
+
+    // Ciclo principal
     while (sData.runServer) {
         printf("[SERVIDOR] Introduza o comando: ");
         scanf(" %39[^\n]", comando);
+        printStats = 0;
         //comando tudo em letras minusculas
         toLower(comando);
         strncpy(temp, comando, MAX_INPUT);
@@ -144,7 +157,7 @@ void readCommands() {
                 }
                 break;
             case 5:
-                cmdStats();
+                cmdStats(&printStats);
                 break;
             case 6:
                 cmdUsers();
@@ -239,7 +252,7 @@ void createServerStartingThreads(pthread_t* timeouts, pthread_t* mainpipe, pthre
     if (err)
         printf("[SERVIDOR] Nao foi possível criar a thread :[%s]\n", strerror(err));
     else
-        printf("[SERVIDOR] A thread responsavel por ler o pipe principal foi criada!\n");
+        printf("[SERVIDOR] A thread responsavel por contabilizar timeouts foi criada!\n");
 
     err = pthread_create(mainpipe, NULL, readFromMainPipe, (void*) pipes);
     if (err)
@@ -618,14 +631,14 @@ void loadDocument(char* nomeFicheiro) {
     }
 
     printf("\n\n[SERVIDOR] Documento \"%s\" carregado.\n\n", nomeFicheiro);
-/*
-    for (int i = 0; i < eData.lin; i++) {
-        for (int j = 0; j < eData.col; j++) {
-            printf("%c", editorTemp[i][j]);
+    /*
+        for (int i = 0; i < eData.lin; i++) {
+            for (int j = 0; j < eData.col; j++) {
+                printf("%c", editorTemp[i][j]);
+            }
+            putchar('\n');
         }
-        putchar('\n');
-    }
-*/
+     */
 
     // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
     pthread_mutex_lock(&mutexClientData);
@@ -637,6 +650,7 @@ void loadDocument(char* nomeFicheiro) {
             eData.lines[i].text[j] = editorTemp[i][j];
         }
     }
+    strncpy(eData.fileName, nomeFicheiro, MAX_FILE_NAME);
     sendMessageEditorUpdateToAllClients(eData, sData);
     pthread_mutex_unlock(&mutexClientData);
 
@@ -668,9 +682,8 @@ void saveDocument(char* nomeFicheiro) {
             }
         }
     }
-
+    sendMessageEditorUpdateToAllClients(eData, sData);
     pthread_mutex_unlock(&mutexClientData);
-    printf("\n\nCONSEGUI\n\n");
 
     FILE *f;
     f = fopen(nomeFicheiro, "wt");
@@ -683,11 +696,50 @@ void saveDocument(char* nomeFicheiro) {
             fputc('\n', f);
         }
         fclose(f);
+        printf("[SERVIDOR]: Gravei o ficheiro %s\n", nomeFicheiro);
     }
 }
 
-void editorStats() {
+void* editorStats(void* param) {
+    int* print = (int*) param;
+    int numWords, numLetters;
+    char mostCommonChars[5];
 
+
+    while (sData.runServer) {
+        // Número total de palavras
+        numWords = countNumberOfWords(eData);
+        // Número de letras
+        numLetters = countNumberofLetters(eData);
+        // 5 caracteres mais comuns
+        mostCommonChars = getMostCommonChars(mostCommonChars, eData);
+
+        if (*print) {
+            printf("\n\n-----STATISTICS-----\n");
+            printf("Numero total de palavras: %d\n", numWords);
+            printf("Numero total de letras: %d\n", numLetters);
+            printf("Caracteres mais comuns: ");
+
+            for (int i = 0; i < 5; i++) {
+                printf("%c", mostCommonChars[i]);
+                i == 4 ? printf("\n\n") : printf(", ");
+            }
+        }
+
+        pthread_mutex_lock(&mutexClientData);
+        
+        eData.numWords = numWords;
+        eData.numLetters = numLetters;
+
+        for (int i = 0; i < 5; i++) {
+            eData.mostCommonChars[i] = mostCommonChars[i];
+        }
+
+        sendMessageEditorUpdateToAllClients(eData, sData);
+        pthread_mutex_unlock(&mutexClientData);
+
+        sleep(1);
+    }
 }
 
 void freeOneLine(int lineNumber) {

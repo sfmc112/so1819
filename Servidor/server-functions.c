@@ -363,8 +363,27 @@ void writeToAllClients(ServerData sd, ServerMsg smsg) {
     int i;
     for (i = 0; i < sd.maxUsers; i++) {
         if (sd.clients[i].valid) {
-
             writeToAClient(sd.clients[i], smsg);
         }
     }
+}
+
+int countNumberOfWords(EditorData eData){
+    int i, count = 0;
+    char linha[eData.col + 1];
+    
+    for (i = 0; i < eData.lin; i++) {
+        strncpy(linha, eData.lines[i].text, eData.col);
+        linha[eData.col] = 0;
+        count += contaPalavras(linha);
+    }
+
+}
+
+int countNumberofLetters(EditorData eData){
+    
+}
+
+char* getMostCommonChars(char* mostCommonChars, EditorData eData){
+    
 }

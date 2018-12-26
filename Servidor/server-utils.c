@@ -118,6 +118,8 @@ int contaPalavras(char * msg) {
     int conta = 0;
 
     token = strtok(tempMsg, " .,;:_?!");
+    if (token == NULL)
+        return conta;
     conta++;
 
     while ((token = strtok(NULL, " .,;:_?!")) != NULL)

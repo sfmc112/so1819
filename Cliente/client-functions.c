@@ -224,6 +224,7 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
             default:
                 *ed = msg.ed;
                 writeUsers(*ed);
+                writeTitle(ed->fileName);
                 writeDocument(ed->lines, ed->lin);
                 refreshCursor(msg.cursorLinePosition, msg.cursorColumnPosition);
                 break;
@@ -264,7 +265,9 @@ void configureWindow(WINDOW* janela, int setCores) {
  * Função responsável por escrever na janela titleWin um título.
  */
 void writeTitle(char* titulo) {
+    resetLine(titleWin, 0, WIN_TITLE_MAX_X);
     mvwprintw(titleWin, 0, 0, "%s - MEDIT", titulo);
+    wrefresh(titleWin);
 }
 
 /**
