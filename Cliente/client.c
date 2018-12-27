@@ -17,7 +17,6 @@ void* readFromMyPipe();
 void configureSignalBeforeLogin(int sinal);
 void configureSignalAfterLogin(int sinal);
 
-
 int runClient = 1;
 int fdMyPipe = -1, fdSv = -1;
 char user[9];
@@ -52,7 +51,7 @@ int main(int argc, char** argv) {
     sendLoginToServer(user);
 
     configureSignalAfterLogin(SIGINT);
-    
+
     startEditor();
 
     //A aplicaçao vai terminar...
@@ -105,7 +104,7 @@ void configureSignalAfterLogin(int sinal) {
 
 /**
  * Função responsável por enviar o username para o servidor. Fazendo com que o mesmo seja validado.
- * @param login username do cliente
+ * @param user username do cliente
  */
 void sendLoginToServer(char* user) {
     puts("[CLIENTE] Vou enviar login para o servidor!");
@@ -148,17 +147,15 @@ void sendLoginToServer(char* user) {
 
     closeNamedPipe(fdSv);
 
-    //Abrir pipe interativo
+    // Abrir pipe interativo
     fdSv = openNamedPipe(msg.intPipeName, O_WRONLY);
     ed = msg.ed;
 }
 
 /**
  * Função responsável por iniciar o editor.
- * @return NULL
  */
 void startEditor() {
-    //TODO mutex
     editor(user, &ed, fdMyPipe, fdSv, &runClient);
 }
 

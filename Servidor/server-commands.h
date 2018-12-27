@@ -1,27 +1,22 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/* 
- * File:   commands.h
- * Author: ricardo
- *
- * Created on October 11, 2018, 12:08 PM
- */
-
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
 void cmdShutdown();
 void cmdSettings();
-int cmdLoad();
-int cmdSave();
-int cmdFree();
-int cmdStats();
-int cmdUsers();
-int cmdText();
+void cmdLoad(char* token);
+void cmdSave(char* token);
+void cmdFree(char* token);
+void cmdStats(int* print);
+void cmdUsers();
+void cmdText();
 int checkCommandArgs(char* token);
 
+// Funções do main (server.c)
+void freeLine(int lineNumber);
+void printEditor();
+void* editorStats(void* param);
+void printUsers();
+void loadDocument(char* nomeFicheiro);
+void saveDocument(char* nomeFicheiro);
+void freeOneLine(int lineNumber);
 #endif /* COMMANDS_H */
