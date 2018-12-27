@@ -481,4 +481,5 @@ void getMostCommonChars(char* mostCommonChars, EditorData eData) {
             break;
         mostCommonChars[count++] = uniqueChars[index];
     }
+    free(uniqueChars);
 }

@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include "client-defaults.h"
 
 #define WIN_USER_MAX_X 8
@@ -129,8 +128,6 @@ void editor(char* user, EditorData * ed, int fdCli, int fdServ, int* run) {
     writeDocument(ed->lines, ed->lin);
     wrefresh(editorWin);
 
-    pthread_mutex_init(&mutexEditor, NULL);
-
     //Preparar FD para select
     fd_set fd_leitura, fd_leitura_temp;
     FD_ZERO(&fd_leitura);
@@ -178,8 +175,6 @@ void writeToServer(int fdServ, int* run, char* user) {
 
     key = getch();
 
-    pthread_mutex_lock(&mutexEditor);
-
     strncpy(msg.username, user, 9);
 
     switch (key) {
@@ -214,7 +209,6 @@ void writeToServer(int fdServ, int* run, char* user) {
     if (*run) {
         write(fdServ, &msg, sizeof (msg));
     }
-    pthread_mutex_unlock(&mutexEditor);
 }
 
 /**
@@ -229,8 +223,6 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
     int serverUp = 1;
 
     nBytes = read(fdCli, &msg, sizeof (msg));
-
-    pthread_mutex_lock(&mutexEditor);
 
     if (nBytes == sizeof (msg)) {
         *ed = msg.ed;
@@ -264,7 +256,6 @@ void readFromServer(int fdCli, int* run, EditorData *ed) {
                 break;
         }
     }
-    pthread_mutex_unlock(&mutexEditor);
 
     if (!serverUp)
         exitServerShutdown();

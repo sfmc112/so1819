@@ -34,7 +34,7 @@ int fdFromAspell = -1;
 int fdMainPipe = -1;
 
 // Mutexes
-pthread_mutex_t mutexClientData;
+pthread_mutex_t mutexData;
 
 int main(int argc, char** argv) {
     if (verifySingleInstance() < 0)
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     resetMEDITLines(&eData);
 
     // Inicializar mutexes
-    pthread_mutex_init(&mutexClientData, NULL);
+    pthread_mutex_init(&mutexData, NULL);
 
     // Inicializar threads;
     pthread_t idCheckTimeout;
@@ -107,7 +107,7 @@ void readCommands() {
 
     // Ciclo principal
     while (sData.runServer) {
-        printf("[SERVIDOR] Introduza o comando: ");
+        printf("\n[SERVIDOR] Introduza o comando: ");
         scanf(" %39[^\n]", comando);
         printStats = 0;
         // comando tudo em letras minusculas
@@ -157,7 +157,7 @@ void readCommands() {
                 cmdText();
                 break;
             default:
-                puts("[SERVIDOR] Comando invalido!");
+                puts("\n[SERVIDOR] Comando invalido!\n");
         }
     }
 }
@@ -292,17 +292,15 @@ void* readFromMainPipe(void* arg) {
         nBytes = read(fdMainPipe, &login, sizeof (LoginMsg));
         //printf("[SERVIDOR] Recebi informacao!\n");
         if (nBytes == sizeof (LoginMsg)) {
-            printf("[SERVIDOR] Recebi login!\n");
             fdCli = openNamedPipe(login.nomePipeCliente, O_WRONLY);
-            printf("\nDescritor do cliente %s: %d\n\n", login.username, fdCli);
             if (fdCli == -1)
                 continue;
-            pthread_mutex_lock(&mutexClientData);
+            pthread_mutex_lock(&mutexData);
             pos = getFirstAvailablePosition(sData);
             //printf("Pos: %d\n", pos);
             if (!checkUsername(login.username) || checkUserOnline(login.username, sData) || pos == -1) {
                 msg.code = LOGIN_FAILURE;
-                printf("[SERVIDOR] Falhou o login!\n");
+                printf("\n[SERVIDOR] Falhou o login!\n");
             } else {
                 msg.code = LOGIN_SUCCESS;
                 msg.ed = eData;
@@ -310,10 +308,9 @@ void* readFromMainPipe(void* arg) {
                 strncpy(msg.intPipeName, pipes[index].pipeName, PIPE_MAX_NAME);
                 registerClient(login.username, &sData, pos, fdCli, pipes[index].fd);
                 strncpy(sData.clients[pos].nameIntPipe, pipes[index].pipeName, PIPE_MAX_NAME);
-                printf("[SERVIDOR] O utilizador %s conectou-se!\n", login.username);
-                printf("Descritor atual %d\n", sData.clients[getClientArrayPosition(sData, login.username)].fdPipeClient);
+                printf("\n[SERVIDOR] O utilizador %s conectou-se!\n", login.username);
             }
-            pthread_mutex_unlock(&mutexClientData);
+            pthread_mutex_unlock(&mutexData);
             write(fdCli, &msg, sizeof (msg));
         }
     }
@@ -333,7 +330,7 @@ void* readFromIntPipe(void* arg) {
     InteractionPipe* pipeI = (InteractionPipe*) arg;
     while (sData.runServer) {
         nBytes = read(pipeI->fd, &msg, sizeof (msg));
-        pthread_mutex_lock(&mutexClientData);
+        pthread_mutex_lock(&mutexData);
         smsg.code = EDITOR_ERROR;
         if (nBytes == sizeof (msg)) {
             //printf("Msg tipo %d\n", msg.msgType);
@@ -350,7 +347,7 @@ void* readFromIntPipe(void* arg) {
             switch (msg.msgType) {
                 case CLIENT_SHUTDOWN:
                     removeClient(msg.username, &sData);
-                    printf("[SERVIDOR] O utilizador %s desconectou-se!\n", msg.username);
+                    printf("\n[SERVIDOR] O utilizador %s desconectou-se!\n", msg.username);
                     pipeI->numUsers--;
                     break;
                 case K_ENTER:
@@ -462,7 +459,7 @@ void* readFromIntPipe(void* arg) {
             else
                 writeToAClient(sData.clients[indexClient], smsg);
         }
-        pthread_mutex_unlock(&mutexClientData);
+        pthread_mutex_unlock(&mutexData);
     }
     return NULL;
 }
@@ -479,10 +476,10 @@ void* threadCheckTimeouts() {
         for (i = 0; i < sData.maxUsers; i++) {
             sData.clients[i].secondsSession++;
             if (sData.clients[i].valid && sData.clients[i].isEditing) {
-                pthread_mutex_lock(&mutexClientData);
+                pthread_mutex_lock(&mutexData);
                 sData.clients[i].secondsAFK++;
                 if (sData.clients[i].secondsAFK >= eData.timeout) {
-                    printf("[SERVIDOR] O cliente %s ficou inativo.\n", sData.clients[i].username);
+                    printf("\n[SERVIDOR] O cliente %s ficou inativo.\n", sData.clients[i].username);
                     freeLine(sData.clients[i].linePosition);
                     smsg.code = TIMEOUT;
                     smsg.ed = eData;
@@ -491,7 +488,7 @@ void* threadCheckTimeouts() {
                     writeToAClient(sData.clients[i], smsg);
                     sendMessageEditorUpdateToAllClients(eData, sData);
                 }
-                pthread_mutex_unlock(&mutexClientData);
+                pthread_mutex_unlock(&mutexData);
             }
         }
         sleep(1);
@@ -505,7 +502,7 @@ void* threadCheckTimeouts() {
  */
 void freeLine(int lineNumber) {
     if (lineNumber >= 0 && lineNumber < eData.lin && eData.lines[lineNumber].free == 0) {
-        printf("[SERVIDOR] Vou libertar a linha %d.\n", lineNumber);
+        printf("\n[SERVIDOR] Vou libertar a linha %d.\n", lineNumber);
         // Ir buscar o indíce do cliente no array de ClientData
         int index = getClientArrayPosition(sData, eData.clients[lineNumber]);
         strncpy(eData.clients[lineNumber], "        ", 8);
@@ -521,14 +518,14 @@ void freeLine(int lineNumber) {
 void printEditor() {
     //char ecra[eData.lin][12 + eData.col];
 
-    pthread_mutex_lock(&mutexClientData);
+    pthread_mutex_lock(&mutexData);
     printf("\n\n-----TEXT-----\n");
     for (int i = 0; i < eData.lin; i++) {
         //snprintf(ecra[i], 12 + eData.col, "%s %02d %s", eData.clients[i], i, eData.lines[i].text);
         //printf("%s\n", ecra[i]);
         printf("%-8s %02d %s\n", eData.clients[i], i, eData.lines[i].text);
     }
-    pthread_mutex_unlock(&mutexClientData);
+    pthread_mutex_unlock(&mutexData);
     putchar('\n');
 }
 
@@ -542,7 +539,7 @@ void printUsers() {
 
     int i;
 
-    // TODO cabeçalho
+    printf("\n\n-----USERS-----\n");
     for (i = 0; i < sData.maxUsers && userIndex[i] != -1; i++) {
         printf("User: %s\nIdade Sessao: %4d segundos\nNome Pipe: %s\nPercentagem de linhas da sua autoria: %d%%",
                 sData.clients[userIndex[i]].username, sData.clients[userIndex[i]].secondsSession, sData.clients[userIndex[i]].nameIntPipe, getPercentage(sData.clients[userIndex[i]].username, eData));
@@ -609,11 +606,11 @@ void loadDocument(char* nomeFicheiro) {
             editorTemp[j][k] = ' ';
         }
     }
-
-    printf("\n\n[SERVIDOR] Documento \"%s\" carregado.\n\n", nomeFicheiro);
+    printf("\n\n-----LOAD-----\n");
+    printf("\n[SERVIDOR] Documento \"%s\" carregado.\n", nomeFicheiro);
 
     // Alterar o texto original com este, libertando as linhas em edicao e notificar os clientes.
-    pthread_mutex_lock(&mutexClientData);
+    pthread_mutex_lock(&mutexData);
     for (i = 0; i < eData.lin; i++) {
         freeLine(i);
     }
@@ -624,18 +621,18 @@ void loadDocument(char* nomeFicheiro) {
     }
     strncpy(eData.fileName, nomeFicheiro, MAX_FILE_NAME);
     sendMessageEditorUpdateToAllClients(eData, sData);
-    pthread_mutex_unlock(&mutexClientData);
+    pthread_mutex_unlock(&mutexData);
 }
 
 /**
- * Função responsável por guardar todo o texto atual do editor num ficheiro com o nome que foi enviado por argumento.
+ * Função responsável por guardar o texto atual do editor num ficheiro com o nome que foi enviado por argumento.
  * @param nomeFicheiro nome do ficheiro
  */
 void saveDocument(char* nomeFicheiro) {
     char editorTemp[eData.lin][eData.col];
     int i = 0, j = 0;
 
-    pthread_mutex_lock(&mutexClientData);
+    pthread_mutex_lock(&mutexData);
     for (i = 0; i < eData.lin; i++) {
         freeLine(i);
     }
@@ -658,7 +655,7 @@ void saveDocument(char* nomeFicheiro) {
         }
     }
     sendMessageEditorUpdateToAllClients(eData, sData);
-    pthread_mutex_unlock(&mutexClientData);
+    pthread_mutex_unlock(&mutexData);
 
     FILE *f;
     f = fopen(nomeFicheiro, "wt");
@@ -671,7 +668,8 @@ void saveDocument(char* nomeFicheiro) {
             fputc('\n', f);
         }
         fclose(f);
-        printf("[SERVIDOR]: Gravei o ficheiro %s\n", nomeFicheiro);
+        printf("\n\n-----SAVE-----\n");
+        printf("\n[SERVIDOR]: Gravei o ficheiro %s\n", nomeFicheiro);
     }
 }
 
@@ -708,7 +706,7 @@ void* editorStats(void* param) {
             printf("\n\n");
         }
 
-        pthread_mutex_lock(&mutexClientData);
+        pthread_mutex_lock(&mutexData);
 
         eData.numWords = numWords;
         eData.numLetters = numLetters;
@@ -722,7 +720,7 @@ void* editorStats(void* param) {
         smsg.ed = eData;
         writeToAllClients(sData, smsg);
 
-        pthread_mutex_unlock(&mutexClientData);
+        pthread_mutex_unlock(&mutexData);
 
         sleep(1);
     }
@@ -734,8 +732,8 @@ void* editorStats(void* param) {
  * @param lineNumber index da linha
  */
 void freeOneLine(int lineNumber) {
-    pthread_mutex_lock(&mutexClientData);
+    pthread_mutex_lock(&mutexData);
     freeLine(lineNumber);
     sendMessageEditorUpdateToAllClients(eData, sData);
-    pthread_mutex_unlock(&mutexClientData);
+    pthread_mutex_unlock(&mutexData);
 }

@@ -63,6 +63,7 @@ void cmdSave(char* token) {
 void cmdFree(char* token) {
     int lineNumber;
     if (sscanf(token, "%d", &lineNumber) == 1) {
+        printf("\n\n-----FREE-----\n");
         freeOneLine(lineNumber);
     }
 }
@@ -98,6 +99,6 @@ int checkCommandArgs(char* token) {
     token = strtok(NULL, " ");
     if (token != NULL)
         return 1;
-    puts("Falta o segundo parametro");
+    puts("\n[SERVIDOR] Falta o segundo parametro");
     return 0;
 }
